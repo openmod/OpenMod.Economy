@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <PackageId>$(AssemblyName)</PackageId>
+        <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+        <PackageTags>OpenMod Plugin Economy Uconomy</PackageTags>
+        <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
+        <PackageProjectUrl>https://github.com/rube200/OpenMod.Economy</PackageProjectUrl>
+        <PackageOwners>OpenMod;Rube200</PackageOwners>
+        <Authors>OpenMod</Authors>
+        <Description>-</Description>
+        <Version>1.0.1</Version>
+        <Company>OpenMod</Company>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <LangVersion>8</LangVersion>
+    </PropertyGroup>
+</Project>

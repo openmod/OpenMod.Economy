@@ -1,0 +1,9 @@
+uconomy:
+  fail:
+    invalid_default_balance: "Invalid default balance {0}"
+    invalid_negative_balance: "Invalid allow negative balance {0}"
+    invalid_store_type: "Invalid store type {0}. Types: {1}"
+    user_not_found: "{0} user not found"
+  success:
+    show_balance: "Your balance: {0}"
+    show_balance_other: "{1}'s balance: {0}"

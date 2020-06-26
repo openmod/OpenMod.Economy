@@ -1,0 +1,5 @@
+Default_Balance: 300
+LiteDb_Connection_String: file.db
+MySql_Connection_String: file.db
+Store_Type: DataStore
+Table_Name: Uconomy
