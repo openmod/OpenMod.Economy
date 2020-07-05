@@ -1,8 +1,10 @@
 ﻿#region
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
 using OpenMod.API.Eventing;
@@ -24,7 +26,8 @@ namespace OpenMod.Economy.DataBase
         private bool m_IsDisposing;
         private SemaphoreSlim m_SemaphoreSlim;
 
-        public Database(bool allowNegativeBalance, decimal defaultBalance, IEventBus eventBus, Economy plugin,
+        public Database(bool allowNegativeBalance, IConfiguration configuration, decimal defaultBalance,
+            IEventBus eventBus, Economy plugin,
             IServiceProvider serviceProvider, StoreType storeType, IStringLocalizer stringLocalizer)
         {
             AllowNegativeBalance = allowNegativeBalance;
@@ -35,16 +38,23 @@ namespace OpenMod.Economy.DataBase
             m_StringLocalizer = stringLocalizer;
 
             m_SemaphoreSlim = new SemaphoreSlim(1, 1);
+
+            var parameters = new List<object>
+            {
+                DefaultBalance,
+                configuration["Table_Name"]
+            };
             var dataBaseType = storeType switch
             {
-                StoreType.DataStore => typeof(MySqlDatabase),
+                StoreType.DataStore => typeof(DataStoreDatabase),
                 StoreType.LiteDb => typeof(LiteDatabase),
                 StoreType.MySql => typeof(MySqlDatabase),
                 StoreType.UserData => typeof(UserDataDatabase),
                 _ => throw new ArgumentOutOfRangeException(nameof(storeType), storeType, null)
             };
+
             m_Database =
-                ActivatorUtilities.CreateInstance(serviceProvider, dataBaseType, DefaultBalance) as
+                ActivatorUtilities.CreateInstance(serviceProvider, dataBaseType, parameters.ToArray()) as
                     IEconomyInternalDatabase;
         }
 

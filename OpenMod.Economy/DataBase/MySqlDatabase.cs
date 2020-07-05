@@ -1,6 +1,7 @@
 ﻿#region
 
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
 using MySql.Data.MySqlClient;
 using OpenMod.Core.Commands;
@@ -17,8 +18,8 @@ namespace OpenMod.Economy.DataBase
         private readonly IStringLocalizer m_StringLocalizer;
         private readonly string m_TableName;
 
-        internal MySqlDatabase(decimal defaultBalance, string mySqlString, IStringLocalizer stringLocalizer,
-            string tableName) : base(mySqlString)
+        public MySqlDatabase(IConfiguration configuration, decimal defaultBalance, IStringLocalizer stringLocalizer,
+            string tableName) : base(configuration["MySql_Connection_String"])
         {
             m_DefaultBalance = defaultBalance;
             m_StringLocalizer = stringLocalizer;
@@ -52,14 +53,14 @@ namespace OpenMod.Economy.DataBase
 
         internal Task CheckShemasAsync()
         {
-            return ExecuteMySqlAsync(async command =>
+            return ExecuteMySqlContextAsync(async command =>
             {
                 command.CommandText = $"SHOW TABLES LIKE '{m_TableName}';";
                 if (await command.ExecuteScalarAsync() != null)
                     return;
 
                 command.CommandText = $"CREATE TABLE `{m_TableName}` (" +
-                                      "`UniqueId` VARCHAR(25) UNSIGNED, " + //The size of 25 can be small, it work for unturned player_STEAMID or discord_STEAMID 
+                                      "`UniqueId` VARCHAR(25), " + //The size of 25 can be small, it work for unturned player_STEAMID or discord_STEAMID 
                                       "`Balance` DECIMAL NOT NULL, " +
                                       "PRIMARY KEY(`UniqueId`)) " +
                                       "COLLATE='utf32_general_ci';";
@@ -70,7 +71,7 @@ namespace OpenMod.Economy.DataBase
 
         private Task<bool> CreateUserAccountInternalAsync(string uniqueId)
         {
-            return ExecuteMySqlAsync(async command =>
+            return ExecuteMySqlContextAsync(async command =>
             {
                 command.Parameters.Add("@uniqueId", MySqlDbType.VarChar).Value = uniqueId;
                 command.Parameters.Add("@defaultBalance", MySqlDbType.Decimal).Value = m_DefaultBalance;
@@ -84,7 +85,7 @@ namespace OpenMod.Economy.DataBase
 
         private Task<decimal> GetBalanceInternalAsync(string uniqueId)
         {
-            return ExecuteMySqlAsync(async command =>
+            return ExecuteMySqlContextAsync(async command =>
             {
                 command.Parameters.Add("@uniqueId", MySqlDbType.VarChar).Value = uniqueId;
                 command.CommandText = "SELECT `Balance` " +
@@ -100,7 +101,7 @@ namespace OpenMod.Economy.DataBase
 
         private Task<decimal> IncreaseBalanceInternalAsync(string uniqueId, decimal amount)
         {
-            return ExecuteMySqlAsync(async command =>
+            return ExecuteMySqlContextAsync(async command =>
             {
                 command.Parameters.Add("@uniqueId", MySqlDbType.VarChar).Value = uniqueId;
                 command.Parameters.Add("@amount", MySqlDbType.Decimal).Value = amount;
@@ -117,7 +118,7 @@ namespace OpenMod.Economy.DataBase
 
         public Task<decimal> DecreaseBalanceInternalAsync(string uniqueId, decimal amount, bool allowNegativeBalance)
         {
-            return ExecuteMySqlAsync(async command =>
+            return ExecuteMySqlContextAsync(async command =>
             {
                 command.Parameters.Add("@uniqueId", MySqlDbType.VarChar).Value = uniqueId;
                 command.Parameters.Add("@amount", MySqlDbType.Decimal).Value = amount;

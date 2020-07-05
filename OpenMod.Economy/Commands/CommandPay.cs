@@ -14,7 +14,7 @@ namespace OpenMod.Economy.Commands
 {
     [Command("pay", Priority = Priority.Normal)]
     [CommandDescription("Pay to a user")]
-    [CommandSyntax("<amount> <player>")]
+    [CommandSyntax("<player> <amount>")]
     public class CommandPay : Command
     {
         private readonly Economy m_Plugin;
@@ -35,10 +35,12 @@ namespace OpenMod.Economy.Commands
         {
             if (Context.Parameters.Length < 2) throw new CommandWrongUsageException(Context);
 
-            var amount = await Context.Parameters.GetAsync<decimal>(0);
-            if (amount <= 0) throw new UserFriendlyException(m_StringLocalizer["uconomy:fail:invalid_amount", amount]);
+            var amount = await Context.Parameters.GetAsync<decimal>(1);
+            var isConsole = Context.Actor.Type == KnownActorTypes.Console;
+            var isNegative = amount < 0;
+            if (isNegative && !isConsole || amount == 0) throw new UserFriendlyException(m_StringLocalizer["uconomy:fail:invalid_amount", amount]);
 
-            var target = await Context.Parameters.GetAsync<string>(1);
+            var target = await Context.Parameters.GetAsync<string>(0);
             var targetPlayer =
                 await m_UserManager.FindUserAsync(KnownActorTypes.Player, target, UserSearchMode.NameOrId);
 
@@ -49,17 +51,29 @@ namespace OpenMod.Economy.Commands
                 throw new UserFriendlyException(m_StringLocalizer["uconomy:fail:self_pay"]);
 
             var contextActorBalance = (decimal?) null;
-            if (Context.Actor.Type != KnownActorTypes.Console)
-                contextActorBalance =
-                    await m_Plugin.DataBase.DecreaseBalanceAsync(Context.Actor.Id, Context.Actor.Type, amount);
-
-            var targetBalance =
-                await m_Plugin.DataBase.IncreaseBalanceAsync(targetPlayer.Id, targetPlayer.Type, amount);
+            decimal targetBalance;
+            if (!isConsole)
+            {
+                contextActorBalance = await m_Plugin.DataBase.DecreaseBalanceAsync(Context.Actor.Id, Context.Actor.Type, amount);
+                targetBalance = await m_Plugin.DataBase.IncreaseBalanceAsync(targetPlayer.Id, targetPlayer.Type, amount);
+            }
+            else
+            {
+                if (isNegative)
+                {
+                    amount = Math.Abs(amount);
+                    targetBalance = await m_Plugin.DataBase.DecreaseBalanceAsync(targetPlayer.Id, targetPlayer.Type, amount);
+                }
+                else
+                {
+                    targetBalance = await m_Plugin.DataBase.IncreaseBalanceAsync(targetPlayer.Id, targetPlayer.Type, amount);
+                }
+            }
 
             await PrintAsync(contextActorBalance.HasValue
-                ? m_StringLocalizer["uconomy:success:pay_player", targetPlayer.DisplayName, contextActorBalance.Value]
-                : m_StringLocalizer["uconomy:success:pay_console", targetPlayer.DisplayName]);
-            await targetPlayer.PrintMessageAsync(m_StringLocalizer["uconomy:success:payed", Context.Actor.DisplayName,
+                ? m_StringLocalizer["uconomy:success:pay_player", targetPlayer.DisplayName, amount, contextActorBalance.Value]
+                : m_StringLocalizer["uconomy:success:pay_console", targetPlayer.DisplayName, amount, targetBalance]);
+            await targetPlayer.PrintMessageAsync(m_StringLocalizer[isNegative ? "uconomy:success:payed_negative" : "uconomy:success:payed", Context.Actor.DisplayName, amount,
                 targetBalance]);
         }
     }

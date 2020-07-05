@@ -1,3 +1,4 @@
+Allow_Negative_Balance: True
 Default_Balance: 300
 LiteDb_Connection_String: file.db
 MySql_Connection_String: file.db

@@ -62,7 +62,7 @@ namespace OpenMod.Economy.Commands
             if (!other)
                 targetData = await m_UserManager.FindUserAsync(Context.Actor.Type, Context.Actor.Id, UserSearchMode.Id);
 
-            var balance = m_Plugin.DataBase.GetBalanceAsync(targetData.Id, targetData.Type);
+            var balance = await m_Plugin.DataBase.GetBalanceAsync(targetData.Id, targetData.Type);
             var message = other
                 ? m_StringLocalizer["uconomy:success:show_balance_other", balance, targetData.DisplayName]
                 : m_StringLocalizer["uconomy:success:show_balance", balance];

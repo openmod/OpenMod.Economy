@@ -1,9 +1,14 @@
 uconomy:
   fail:
-    invalid_default_balance: "Invalid default balance {0}"
-    invalid_negative_balance: "Invalid allow negative balance {0}"
-    invalid_store_type: "Invalid store type {0}. Types: {1}"
-    user_not_found: "{0} user not found"
+    invalid_default_balance: "Invalid default balance '{0}'."
+    invalid_negative_balance: "Invalid allow negative balance '{0}'."
+    invalid_store_type: "Invalid store type '{0}'. Types: {1}"
+    self_pay: "You can not pay to yourself."
+    user_not_found: "'{0}'' user not found."
   success:
-    show_balance: "Your balance: {0}"
-    show_balance_other: "{1}'s balance: {0}"
+    show_balance: "Your balance: '{0}'."
+    show_balance_other: "{1}'s balance: '{0}'."
+    pay_player: "You payed '{1}' to '{0}', your new balance '{2}'."
+    pay_console: "You changed the '{0}' balance by '{1}', the new balance is '{2}'."
+    payed: "You receive a payment from {1}' from {0}, your new balance '{2}'."
+    payed_negative: "Your balance was withdrawn '{1}' by '{0}', your new balance '{2}'."

@@ -1,6 +1,7 @@
 ﻿#region
 
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
 using OpenMod.Core.Commands;
 using OpenMod.Database.Helper;
@@ -17,8 +18,8 @@ namespace OpenMod.Economy.DataBase
         private readonly IStringLocalizer m_StringLocalizer;
         private readonly string m_TableName;
 
-        internal LiteDatabase(decimal defaultBalance, string liteDbString, IStringLocalizer stringLocalizer,
-            string tableName) : base(liteDbString)
+        public LiteDatabase(IConfiguration configuration, decimal defaultBalance, IStringLocalizer stringLocalizer,
+            string tableName) : base(configuration["LiteDb_Connection_String"])
         {
             m_DefaultBalance = defaultBalance;
             m_StringLocalizer = stringLocalizer;
@@ -28,7 +29,7 @@ namespace OpenMod.Economy.DataBase
         public Task<bool> CreateUserAccountAsync(string userId, string userType)
         {
             var uniqueId = $"{userType}_{userId}";
-            return ExecuteLiteDbAsync(db =>
+            return ExecuteLiteDbContextAsync(db =>
             {
                 var accounts = db.GetCollection<UserAccount>(m_TableName);
                 var account = accounts.FindById(uniqueId);
@@ -50,7 +51,7 @@ namespace OpenMod.Economy.DataBase
         public Task<decimal> GetBalanceAsync(string userId, string userType)
         {
             var uniqueId = $"{userType}_{userId}";
-            return ExecuteLiteDbAsync(db =>
+            return ExecuteLiteDbContextAsync(db =>
             {
                 var accounts = db.GetCollection<UserAccount>(m_TableName);
                 var account = accounts.FindById(uniqueId);
@@ -61,7 +62,7 @@ namespace OpenMod.Economy.DataBase
         public Task<decimal> IncreaseBalanceAsync(string userId, string userType, decimal amount)
         {
             var uniqueId = $"{userType}_{userId}";
-            return ExecuteLiteDbAsync(db =>
+            return ExecuteLiteDbContextAsync(db =>
             {
                 var accounts = db.GetCollection<UserAccount>(m_TableName);
                 var account = accounts.FindById(uniqueId);
@@ -76,7 +77,7 @@ namespace OpenMod.Economy.DataBase
             bool allowNegativeBalance)
         {
             var uniqueId = $"{userType}_{userId}";
-            return ExecuteLiteDbAsync(db =>
+            return ExecuteLiteDbContextAsync(db =>
             {
                 var accounts = db.GetCollection<UserAccount>(m_TableName);
                 var account = accounts.FindById(uniqueId);

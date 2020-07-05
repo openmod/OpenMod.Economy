@@ -4,9 +4,8 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
-using OpenMod.Core.Eventing;
+using OpenMod.Core.Commands;
 using OpenMod.Core.Plugins;
-using OpenMod.Core.Users.Events;
 using OpenMod.Economy.API;
 
 #endregion
@@ -15,7 +14,7 @@ using OpenMod.Economy.API;
 
 namespace OpenMod.Economy
 {
-    public sealed class Economy : OpenModUniversalPlugin
+    public sealed class Economy : OpenModPluginBase
     {
         private readonly IServiceProvider m_ServiceProvider;
         private readonly IStringLocalizer m_StringLocalizer;
@@ -28,18 +27,20 @@ namespace OpenMod.Economy
 
         public IEconomyDatabase DataBase { get; set; }
 
-        protected override async Task OnLoadAsync()
+        public override async Task LoadAsync()
         {
+            await base.LoadAsync();
             if (!Enum.TryParse<StoreType>(Configuration["Store_Type"], out var storeType))
-                throw new Exception(m_StringLocalizer["uconomy:fail:invalid_store_type", Configuration["Store_Type"],
+                throw new UserFriendlyException(m_StringLocalizer["uconomy:fail:invalid_store_type",
+                    Configuration["Store_Type"],
                     string.Join(", ", Enum.GetNames(typeof(StoreType)))]);
 
             if (!decimal.TryParse(Configuration["Default_Balance"], out var defaultBalance) || defaultBalance < 0)
-                throw new Exception(m_StringLocalizer["uconomy:fail:invalid_default_balance",
+                throw new UserFriendlyException(m_StringLocalizer["uconomy:fail:invalid_default_balance",
                     Configuration["Default_Balance"]]);
 
             if (!bool.TryParse(Configuration["Allow_Negative_Balance"], out var allowNegativeBalance))
-                throw new Exception(m_StringLocalizer["uconomy:fail:invalid_negative_balance",
+                throw new UserFriendlyException(m_StringLocalizer["uconomy:fail:invalid_negative_balance",
                     Configuration["Allow_Negative_Balance"]]);
 
             if (DataBase != null)
@@ -50,15 +51,10 @@ namespace OpenMod.Economy
             await DataBase.LoadDatabaseAsync();
         }
 
-        protected override async Task OnUnloadAsync()
+        public override async Task UnloadAsync()
         {
+            await base.UnloadAsync();
             await DataBase.DisposeAsync();
-        }
-
-        [EventListener]
-        public Task OnUserConnectedAsync(object _, UserConnectedEvent userConnectedEvent)
-        {
-            return DataBase.CreateUserAccountAsync(userConnectedEvent.User.Id, userConnectedEvent.User.Type);
         }
     }
 }
