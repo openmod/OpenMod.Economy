@@ -42,7 +42,8 @@ namespace OpenMod.Economy
             if (DataBase != null)
                 await DataBase.DisposeAsync();
 
-            DataBase = ActivatorUtilities.CreateInstance<DataBase.Database>(m_ServiceProvider,defaultBalance, storeType);
+            DataBase = ActivatorUtilities.CreateInstance<DataBase.Database>(m_ServiceProvider, defaultBalance,
+                storeType);
             await DataBase.LoadDatabaseAsync();
         }
 

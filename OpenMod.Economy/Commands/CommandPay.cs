@@ -39,7 +39,8 @@ namespace OpenMod.Economy.Commands
             var amount = await Context.Parameters.GetAsync<decimal>(1);
             var isConsole = Context.Actor.Type == KnownActorTypes.Console;
             var isNegative = amount < 0;
-            if (isNegative && !isConsole || amount == 0) throw new UserFriendlyException(m_StringLocalizer["economy:fail:invalid_amount", amount]);
+            if (isNegative && !isConsole || amount == 0)
+                throw new UserFriendlyException(m_StringLocalizer["economy:fail:invalid_amount", amount]);
 
             var target = await Context.Parameters.GetAsync<string>(0);
             var targetPlayer =
@@ -63,17 +64,17 @@ namespace OpenMod.Economy.Commands
                 OwnerId = Context.Actor.Id
             };
 
-            if (!isConsole)
-            {
-                contextActorBalance = await m_Plugin.DataBase.UpdateBalanceAsync(actorAccountId, -amount);
-            }
+            if (!isConsole) contextActorBalance = await m_Plugin.DataBase.UpdateBalanceAsync(actorAccountId, -amount);
 
             var targetBalance = await m_Plugin.DataBase.UpdateBalanceAsync(targetAccountId, amount);
 
             await PrintAsync(contextActorBalance.HasValue
-                ? m_StringLocalizer["economy:success:pay_player", targetPlayer.DisplayName, amount, contextActorBalance.Value]
+                ? m_StringLocalizer["economy:success:pay_player", targetPlayer.DisplayName, amount,
+                    contextActorBalance.Value]
                 : m_StringLocalizer["economy:success:pay_console", targetPlayer.DisplayName, amount, targetBalance]);
-            await targetPlayer.PrintMessageAsync(m_StringLocalizer[isNegative ? "economy:success:payed_negative" : "economy:success:payed", Context.Actor.DisplayName, amount,
+            await targetPlayer.PrintMessageAsync(m_StringLocalizer[
+                isNegative ? "economy:success:payed_negative" : "economy:success:payed", Context.Actor.DisplayName,
+                amount,
                 targetBalance]);
         }
     }

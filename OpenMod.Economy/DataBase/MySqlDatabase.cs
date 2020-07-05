@@ -27,6 +27,67 @@ namespace OpenMod.Economy.DataBase
             m_TableName = tableName;
         }
 
+        public Task<decimal> GetBalanceAsync(IAccountId accountId)
+        {
+            var uniqueId = $"{accountId.OwnerType}_{accountId.OwnerId}";
+            return ExecuteMySqlContextAsync(async command =>
+            {
+                command.Parameters.Add("@uniqueId", MySqlDbType.VarChar).Value = uniqueId;
+                command.CommandText = "SELECT `Balance` " +
+                                      $"FROM `{m_TableName}` " +
+                                      "WHERE `UniqueId`=@uniqueId;";
+
+                if (await command.ExecuteScalarAsync() is decimal balance) return balance;
+
+                await CreateAccountIntenalAsync(uniqueId, m_DefaultBalance);
+                return m_DefaultBalance;
+            });
+        }
+
+        public Task<decimal> UpdateBalanceAsync(IAccountId accountId, decimal amount)
+        {
+            var uniqueId = $"{accountId.OwnerType}_{accountId.OwnerId}";
+            return ExecuteMySqlContextAsync(async command =>
+            {
+                command.Parameters.Add("@uniqueId", MySqlDbType.VarChar).Value = uniqueId;
+                command.Parameters.Add("@amount", MySqlDbType.Decimal).Value = amount;
+                command.CommandText = $"UPDATE `{m_TableName}` " +
+                                      "SET `Balance` = `Balance` + @amount " +
+                                      "WHERE `UniqueId` = @uniqueId;";
+
+                if (await command.ExecuteNonQueryAsync() > 0)
+                {
+                    var balance = await GetBalanceAsync(accountId);
+                    if (balance >= 0 || amount >= 0)
+                        return balance;
+
+                    balance = await UpdateBalanceAsync(accountId, Math.Abs(amount));
+                    throw new UserFriendlyException(m_StringLocalizer["economy:fail:not_enough_balance", balance]);
+                }
+
+                await CreateAccountIntenalAsync(uniqueId, m_DefaultBalance);
+                return await UpdateBalanceAsync(accountId, amount);
+            });
+        }
+
+        public async Task SetAccountAsync(IAccountId accountId, decimal balance)
+        {
+            var uniqueId = $"{accountId.OwnerType}_{accountId.OwnerId}";
+            if (await CreateAccountIntenalAsync(uniqueId, balance))
+                return;
+
+            await ExecuteMySqlContextAsync(command =>
+            {
+                command.Parameters.Add("@uniqueId", MySqlDbType.VarChar).Value = uniqueId;
+                command.Parameters.Add("@balance", MySqlDbType.Decimal).Value = balance;
+                command.CommandText = $"UPDATE `{m_TableName}` " +
+                                      "SET `Balance` = @balance " +
+                                      "WHERE `UniqueId` = @uniqueId;";
+
+                return command.ExecuteNonQueryAsync();
+            });
+        }
+
         internal Task CheckShemasAsync()
         {
             return ExecuteMySqlContextAsync(async command =>
@@ -45,75 +106,17 @@ namespace OpenMod.Economy.DataBase
             });
         }
 
-        private Task<bool> CreateAccountIntenalAsync(IAccountId accountId, decimal balance)
+        private Task<bool> CreateAccountIntenalAsync(string uniqueId, decimal balance)
         {
             return ExecuteMySqlContextAsync(async command =>
             {
-                command.Parameters.Add("@uniqueId", MySqlDbType.VarChar).Value = accountId.UniqueId;
+                command.Parameters.Add("@uniqueId", MySqlDbType.VarChar).Value = uniqueId;
                 command.Parameters.Add("@balance", MySqlDbType.Decimal).Value = balance;
                 command.CommandText = $"INSERT IGNORE INTO `{m_TableName}` " +
                                       "(`UniqueId`, `Balance`) VALUES " +
                                       "(@uniqueId, @balance);";
 
                 return await command.ExecuteNonQueryAsync() > 0;
-            });
-        }
-
-        public Task<decimal> GetBalanceAsync(IAccountId accountId)
-        {
-            return ExecuteMySqlContextAsync(async command =>
-            {
-                command.Parameters.Add("@uniqueId", MySqlDbType.VarChar).Value = accountId.UniqueId;
-                command.CommandText = "SELECT `Balance` " +
-                                      $"FROM `{m_TableName}` " +
-                                      "WHERE `UniqueId`=@uniqueId;";
-
-                if (await command.ExecuteScalarAsync() is decimal balance) return balance;
-
-                await CreateAccountIntenalAsync(accountId, m_DefaultBalance);
-                return m_DefaultBalance;
-            });
-        }
-         
-        public Task<decimal> UpdateBalanceAsync(IAccountId accountId, decimal amount)
-        {
-            return ExecuteMySqlContextAsync(async command =>
-            {
-                command.Parameters.Add("@uniqueId", MySqlDbType.VarChar).Value = accountId.UniqueId;
-                command.Parameters.Add("@amount", MySqlDbType.Decimal).Value = amount;
-                command.CommandText = $"UPDATE `{m_TableName}` " +
-                                      "SET `Balance` = `Balance` + @amount " +
-                                      "WHERE `UniqueId` = @uniqueId;";
-
-                if (await command.ExecuteNonQueryAsync() > 0)
-                {
-                    var balance = await GetBalanceAsync(accountId);
-                    if (balance >= 0 || amount >= 0) 
-                        return balance;
-
-                    balance = await UpdateBalanceAsync(accountId, Math.Abs(amount));
-                    throw new UserFriendlyException(m_StringLocalizer["economy:fail:not_enough_balance", balance]);
-                }
-
-                await CreateAccountIntenalAsync(accountId, m_DefaultBalance);
-                return await UpdateBalanceAsync(accountId, amount);
-            });
-        }
-
-        public async Task SetAccountAsync(IAccountId accountId, decimal balance)
-        {
-            if (await CreateAccountIntenalAsync(accountId, balance))
-                return;
-
-            await ExecuteMySqlContextAsync(command =>
-            {
-                command.Parameters.Add("@uniqueId", MySqlDbType.VarChar).Value = accountId.UniqueId;
-                command.Parameters.Add("@balance", MySqlDbType.Decimal).Value = balance;
-                command.CommandText = $"UPDATE `{m_TableName}` " +
-                                      "SET `Balance` = @balance " +
-                                      "WHERE `UniqueId` = @uniqueId;";
-
-                return command.ExecuteNonQueryAsync();
             });
         }
     }

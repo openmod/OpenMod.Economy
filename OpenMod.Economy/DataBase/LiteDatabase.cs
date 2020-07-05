@@ -28,28 +28,31 @@ namespace OpenMod.Economy.DataBase
 
         public Task<decimal> GetBalanceAsync(IAccountId accountId)
         {
+            var uniqueId = $"{accountId.OwnerType}_{accountId.OwnerId}";
             return ExecuteLiteDbContextAsync(db =>
             {
                 var accounts = db.GetCollection<AccountBase>(m_TableName);
-                var account = accounts.FindById(accountId.UniqueId);
+                var account = accounts.FindById(uniqueId);
                 return account.Balance;
             });
         }
 
         public Task<decimal> UpdateBalanceAsync(IAccountId accountId, decimal amount)
         {
+            var uniqueId = $"{accountId.OwnerType}_{accountId.OwnerId}";
             return ExecuteLiteDbContextAsync(db =>
             {
                 var accounts = db.GetCollection<AccountBase>(m_TableName);
-                var account = accounts.FindById(accountId.UniqueId) ?? new AccountBase
+                var account = accounts.FindById(uniqueId) ?? new AccountBase
                 {
-                    UniqueId = accountId.UniqueId,
+                    UniqueId = uniqueId,
                     Balance = m_DefaultBalance
                 };
 
                 account.Balance += amount;
                 if (account.Balance < 0)
-                    throw new UserFriendlyException(m_StringLocalizer["economy:fail:not_enough_balance", account.Balance]);
+                    throw new UserFriendlyException(m_StringLocalizer["economy:fail:not_enough_balance",
+                        account.Balance]);
 
                 accounts.Upsert(account);
                 return account.Balance;
@@ -58,12 +61,13 @@ namespace OpenMod.Economy.DataBase
 
         public Task SetAccountAsync(IAccountId accountId, decimal balance)
         {
+            var uniqueId = $"{accountId.OwnerType}_{accountId.OwnerId}";
             return ExecuteLiteDbContextAsync(db =>
             {
                 var accounts = db.GetCollection<AccountBase>(m_TableName);
-                var account = accounts.FindById(accountId.UniqueId) ?? new AccountBase
+                var account = accounts.FindById(uniqueId) ?? new AccountBase
                 {
-                    UniqueId = accountId.UniqueId,
+                    UniqueId = uniqueId
                 };
 
                 account.Balance = balance;

@@ -1,23 +1,24 @@
-﻿using System;
+﻿#region
+
+using System;
 using System.Text.Json.Serialization;
 using LiteDB;
 using OpenMod.Economy.API;
+
+#endregion
 
 namespace OpenMod.Economy.Core
 {
     public class AccountId : IAccountId
     {
-        private string m_OwnerType;
         private string m_OwnerId;
+        private string m_OwnerType;
 
 
         [BsonId]
         public string UniqueId
         {
-            get
-            {
-                return $"{m_OwnerType}_{m_OwnerId}";
-            }
+            get => $"{m_OwnerType}_{m_OwnerId}";
             set
             {
                 var values = value.Split('_');
@@ -26,18 +27,20 @@ namespace OpenMod.Economy.Core
             }
         }
 
-        [BsonIgnore, JsonIgnore]
+        [BsonIgnore]
+        [JsonIgnore]
         public string OwnerType
         {
-            get { return m_OwnerType; }
-            set { m_OwnerType = value?.ToLower(); }
+            get => m_OwnerType;
+            set => m_OwnerType = value?.ToLower();
         }
 
-        [BsonIgnore, JsonIgnore]
+        [BsonIgnore]
+        [JsonIgnore]
         public string OwnerId
         {
-            get { return m_OwnerId; }
-            set { m_OwnerId = value?.ToLower(); }
+            get => m_OwnerId;
+            set => m_OwnerId = value?.ToLower();
         }
 
         public override bool Equals(object obj)

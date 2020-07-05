@@ -30,7 +30,7 @@ namespace OpenMod.Economy.DataBase
             return ExecuteUserDataContextAsync(accountId.OwnerType, accountId.OwnerId, data =>
             {
                 if (data.TryGetValue(m_TableName, out var balance))
-                    return (decimal)balance;
+                    return (decimal) balance;
 
                 data.Add(m_TableName, m_DefaultBalance);
                 return m_DefaultBalance;
@@ -43,7 +43,7 @@ namespace OpenMod.Economy.DataBase
             {
                 decimal balance;
                 if (data.TryGetValue(m_TableName, out var balanceObj))
-                    balance = (decimal)balanceObj;
+                    balance = (decimal) balanceObj;
                 else
                     balance = m_DefaultBalance;
 
@@ -58,10 +58,8 @@ namespace OpenMod.Economy.DataBase
 
         public Task SetAccountAsync(IAccountId accountId, decimal balance)
         {
-            return ExecuteUserDataContextAsync(accountId.OwnerType, accountId.OwnerId, data =>
-            {
-                data[m_TableName] = balance;
-            });
+            return ExecuteUserDataContextAsync(accountId.OwnerType, accountId.OwnerId,
+                data => { data[m_TableName] = balance; });
         }
     }
 }
