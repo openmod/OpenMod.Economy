@@ -7,9 +7,9 @@ using OpenMod.Economy.API;
 
 namespace OpenMod.Economy.Events
 {
-    public class GetBalanceEvent : Event
+    public class SetAccountEvent : Event
     {
-        public GetBalanceEvent(IAccountId accountId, decimal balance)
+        public SetAccountEvent(IAccountId accountId, decimal balance)
         {
             AccountId = accountId;
             Balance = balance;

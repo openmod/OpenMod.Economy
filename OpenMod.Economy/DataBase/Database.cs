@@ -26,11 +26,10 @@ namespace OpenMod.Economy.DataBase
         private bool m_IsDisposing;
         private SemaphoreSlim m_SemaphoreSlim;
 
-        public Database(bool allowNegativeBalance, IConfiguration configuration, decimal defaultBalance,
+        public Database(IConfiguration configuration, decimal defaultBalance,
             IEventBus eventBus, Economy plugin,
             IServiceProvider serviceProvider, StoreType storeType, IStringLocalizer stringLocalizer)
         {
-            AllowNegativeBalance = allowNegativeBalance;
             DefaultBalance = defaultBalance;
 
             m_Plugin = plugin;
@@ -58,7 +57,6 @@ namespace OpenMod.Economy.DataBase
                     IEconomyInternalDatabase;
         }
 
-        public bool AllowNegativeBalance { get; }
         public decimal DefaultBalance { get; }
 
         public async Task LoadDatabaseAsync()
@@ -69,52 +67,35 @@ namespace OpenMod.Economy.DataBase
             await mySqlDatabase.CheckShemasAsync();
         }
 
-        public Task<bool> CreateUserAccountAsync(string userId, string userType)
+        public async Task<decimal> GetBalanceAsync(IAccountId accountId)
         {
-            return m_Database.CreateUserAccountAsync(userId, userType);
-        }
+            var balance = await m_Database.GetBalanceAsync(accountId);
 
-        public async Task<decimal> GetBalanceAsync(string userId, string userType)
-        {
-            var balance = await m_Database.GetBalanceAsync(userId, userType);
-
-            var getBalanceEvent = new GetBalanceEvent(userId, userType, balance);
+            var getBalanceEvent = new GetBalanceEvent(accountId, balance);
             await m_EventBus.EmitAsync(m_Plugin, this, getBalanceEvent);
 
             return balance;
         }
 
-        public async Task<decimal> IncreaseBalanceAsync(string userId, string userType, decimal amount)
+        public async Task<decimal> UpdateBalanceAsync(IAccountId accountId, decimal amount)
         {
-            if (amount < 0)
-                amount = Math.Abs(amount);
-            else if (amount == 0)
-                throw new UserFriendlyException(m_StringLocalizer["uconomy:fail:invalid_amount", amount]);
+            if (amount == 0)
+                throw new UserFriendlyException(m_StringLocalizer["economy:fail:invalid_amount", amount]);
 
-            var balance = await m_Database.IncreaseBalanceAsync(userId, userType, amount);
+            var balance = await m_Database.UpdateBalanceAsync(accountId, amount);
 
-            var getBalanceEvent = new ChangeBalanceEvent(userId, userType, balance, amount);
+            var getBalanceEvent = new ChangeBalanceEvent(accountId, balance, amount);
             await m_EventBus.EmitAsync(m_Plugin, this, getBalanceEvent);
 
             return balance;
         }
 
-        public async Task<decimal> DecreaseBalanceAsync(string userId, string userType, decimal amount,
-            bool? allowNegativeBalance = null)
+        public async Task SetAccountAsync(IAccountId accountId, decimal balance)
         {
-            if (amount < 0)
-                amount = Math.Abs(amount);
-            else if (amount == 0)
-                throw new UserFriendlyException(m_StringLocalizer["uconomy:fail:invalid_amount", amount]);
+            await m_Database.SetAccountAsync(accountId, balance);
 
-            allowNegativeBalance ??= AllowNegativeBalance;
-
-            var balance = await m_Database.DecreaseBalanceAsync(userId, userType, amount, allowNegativeBalance.Value);
-
-            var getBalanceEvent = new ChangeBalanceEvent(userId, userType, balance, -amount);
+            var getBalanceEvent = new SetAccountEvent(accountId, balance);
             await m_EventBus.EmitAsync(m_Plugin, this, getBalanceEvent);
-
-            return balance;
         }
 
         public ValueTask DisposeAsync()

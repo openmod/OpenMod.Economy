@@ -26,69 +26,48 @@ namespace OpenMod.Economy.DataBase
             m_TableName = tableName;
         }
 
-        public Task<bool> CreateUserAccountAsync(string userId, string userType)
+        public Task<decimal> GetBalanceAsync(IAccountId accountId)
         {
-            var uniqueId = $"{userType}_{userId}";
             return ExecuteLiteDbContextAsync(db =>
             {
-                var accounts = db.GetCollection<UserAccount>(m_TableName);
-                var account = accounts.FindById(uniqueId);
-
-                if (account != null)
-                    return false;
-
-                return accounts.Insert(new[]
-                {
-                    new UserAccount
-                    {
-                        Balance = m_DefaultBalance,
-                        UniqueId = uniqueId
-                    }
-                }) >= 1;
-            });
-        }
-
-        public Task<decimal> GetBalanceAsync(string userId, string userType)
-        {
-            var uniqueId = $"{userType}_{userId}";
-            return ExecuteLiteDbContextAsync(db =>
-            {
-                var accounts = db.GetCollection<UserAccount>(m_TableName);
-                var account = accounts.FindById(uniqueId);
+                var accounts = db.GetCollection<AccountBase>(m_TableName);
+                var account = accounts.FindById(accountId.UniqueId);
                 return account.Balance;
             });
         }
 
-        public Task<decimal> IncreaseBalanceAsync(string userId, string userType, decimal amount)
+        public Task<decimal> UpdateBalanceAsync(IAccountId accountId, decimal amount)
         {
-            var uniqueId = $"{userType}_{userId}";
             return ExecuteLiteDbContextAsync(db =>
             {
-                var accounts = db.GetCollection<UserAccount>(m_TableName);
-                var account = accounts.FindById(uniqueId);
-                var balance = account.Balance += amount;
+                var accounts = db.GetCollection<AccountBase>(m_TableName);
+                var account = accounts.FindById(accountId.UniqueId) ?? new AccountBase
+                {
+                    UniqueId = accountId.UniqueId,
+                    Balance = m_DefaultBalance
+                };
 
-                accounts.Update(account);
-                return balance;
+                account.Balance += amount;
+                if (account.Balance < 0)
+                    throw new UserFriendlyException(m_StringLocalizer["economy:fail:not_enough_balance", account.Balance]);
+
+                accounts.Upsert(account);
+                return account.Balance;
             });
         }
 
-        public Task<decimal> DecreaseBalanceAsync(string userId, string userType, decimal amount,
-            bool allowNegativeBalance)
+        public Task SetAccountAsync(IAccountId accountId, decimal balance)
         {
-            var uniqueId = $"{userType}_{userId}";
             return ExecuteLiteDbContextAsync(db =>
             {
-                var accounts = db.GetCollection<UserAccount>(m_TableName);
-                var account = accounts.FindById(uniqueId);
+                var accounts = db.GetCollection<AccountBase>(m_TableName);
+                var account = accounts.FindById(accountId.UniqueId) ?? new AccountBase
+                {
+                    UniqueId = accountId.UniqueId,
+                };
 
-                if (!allowNegativeBalance && amount > account.Balance)
-                    throw new UserFriendlyException(m_StringLocalizer["uconomy:fail:not_enough_balance",
-                        account.Balance]);
-
-                var balance = account.Balance -= amount;
-                accounts.Update(account);
-                return balance;
+                account.Balance = balance;
+                accounts.Upsert(account);
             });
         }
     }

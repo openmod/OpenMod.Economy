@@ -31,23 +31,18 @@ namespace OpenMod.Economy
         {
             await base.LoadAsync();
             if (!Enum.TryParse<StoreType>(Configuration["Store_Type"], out var storeType))
-                throw new UserFriendlyException(m_StringLocalizer["uconomy:fail:invalid_store_type",
+                throw new UserFriendlyException(m_StringLocalizer["economy:fail:invalid_store_type",
                     Configuration["Store_Type"],
                     string.Join(", ", Enum.GetNames(typeof(StoreType)))]);
 
             if (!decimal.TryParse(Configuration["Default_Balance"], out var defaultBalance) || defaultBalance < 0)
-                throw new UserFriendlyException(m_StringLocalizer["uconomy:fail:invalid_default_balance",
+                throw new UserFriendlyException(m_StringLocalizer["economy:fail:invalid_default_balance",
                     Configuration["Default_Balance"]]);
-
-            if (!bool.TryParse(Configuration["Allow_Negative_Balance"], out var allowNegativeBalance))
-                throw new UserFriendlyException(m_StringLocalizer["uconomy:fail:invalid_negative_balance",
-                    Configuration["Allow_Negative_Balance"]]);
 
             if (DataBase != null)
                 await DataBase.DisposeAsync();
 
-            DataBase = ActivatorUtilities.CreateInstance<DataBase.Database>(m_ServiceProvider, allowNegativeBalance,
-                defaultBalance, storeType);
+            DataBase = ActivatorUtilities.CreateInstance<DataBase.Database>(m_ServiceProvider,defaultBalance, storeType);
             await DataBase.LoadDatabaseAsync();
         }
 

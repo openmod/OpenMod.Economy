@@ -1,4 +1,4 @@
-uconomy:
+economy:
   fail:
     invalid_default_balance: "Invalid default balance '{0}'."
     invalid_negative_balance: "Invalid allow negative balance '{0}'."

@@ -8,6 +8,7 @@ using OpenMod.API.Prioritization;
 using OpenMod.API.Users;
 using OpenMod.Core.Commands;
 using OpenMod.Core.Users;
+using OpenMod.Economy.Core;
 
 #endregion
 
@@ -52,7 +53,7 @@ namespace OpenMod.Economy.Commands
                 if (otherPermission)
                 {
                     if (targetData == null)
-                        throw new UserFriendlyException(m_StringLocalizer["uconomy:fail:user_not_found", target]);
+                        throw new UserFriendlyException(m_StringLocalizer["economy:fail:user_not_found", target]);
 
                     if (!Context.Actor.Id.Equals(targetData.Id, StringComparison.OrdinalIgnoreCase))
                         other = true;
@@ -62,10 +63,16 @@ namespace OpenMod.Economy.Commands
             if (!other)
                 targetData = await m_UserManager.FindUserAsync(Context.Actor.Type, Context.Actor.Id, UserSearchMode.Id);
 
-            var balance = await m_Plugin.DataBase.GetBalanceAsync(targetData.Id, targetData.Type);
+            var accountId = new AccountId
+            {
+                OwnerType = targetData.Type,
+                OwnerId = targetData.Id
+            };
+
+            var balance = await m_Plugin.DataBase.GetBalanceAsync(accountId);
             var message = other
-                ? m_StringLocalizer["uconomy:success:show_balance_other", balance, targetData.DisplayName]
-                : m_StringLocalizer["uconomy:success:show_balance", balance];
+                ? m_StringLocalizer["economy:success:show_balance_other", balance, targetData.DisplayName]
+                : m_StringLocalizer["economy:success:show_balance", balance];
             await PrintAsync(message);
         }
     }

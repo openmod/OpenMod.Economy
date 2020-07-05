@@ -25,64 +25,42 @@ namespace OpenMod.Economy.DataBase
             m_TableName = tableName;
         }
 
-        public Task<bool> CreateUserAccountAsync(string userId, string userType)
+        public Task<decimal> GetBalanceAsync(IAccountId accountId)
         {
-            return ExecuteUserDataContextAsync(userId, userType, data =>
+            return ExecuteUserDataContextAsync(accountId.OwnerType, accountId.OwnerId, data =>
             {
-                if (data.ContainsKey(m_TableName)) return false;
-
-                data.Add(m_TableName, m_DefaultBalance);
-                return true;
-            });
-        }
-
-        public Task<decimal> GetBalanceAsync(string userId, string userType)
-        {
-            return ExecuteUserDataContextAsync(userId, userType, data =>
-            {
-                if (data.TryGetValue(m_TableName, out var balance)) 
-                    return (decimal) balance;
+                if (data.TryGetValue(m_TableName, out var balance))
+                    return (decimal)balance;
 
                 data.Add(m_TableName, m_DefaultBalance);
                 return m_DefaultBalance;
             });
         }
 
-        public Task<decimal> IncreaseBalanceAsync(string userId, string userType, decimal amount)
+        public Task<decimal> UpdateBalanceAsync(IAccountId accountId, decimal amount)
         {
-            return ExecuteUserDataContextAsync(userId, userType, data =>
+            return ExecuteUserDataContextAsync(accountId.OwnerType, accountId.OwnerId, data =>
             {
                 decimal balance;
-                if (data.TryGetValue(m_TableName, out var currentBalance))
-                {
-                    balance = (decimal) currentBalance + amount;
-                    data[m_TableName] = balance;
-                    return balance;
-                }
-
-                balance = m_DefaultBalance + amount;
-                data.Add(m_TableName, balance);
-                return m_DefaultBalance;
-            });
-        }
-
-        public Task<decimal> DecreaseBalanceAsync(string userId, string userType, decimal amount,
-            bool allowNegativeBalance)
-        {
-            return ExecuteUserDataContextAsync(userId, userType, data =>
-            {
-                decimal currentBalance;
-                if (data.TryGetValue(m_TableName, out var currentBalanceObj))
-                    currentBalance = (decimal) currentBalanceObj;
+                if (data.TryGetValue(m_TableName, out var balanceObj))
+                    balance = (decimal)balanceObj;
                 else
-                    currentBalance = m_DefaultBalance;
+                    balance = m_DefaultBalance;
 
-                var balance = currentBalance + amount;
-                if (!allowNegativeBalance && balance < 0)
-                    throw new UserFriendlyException(m_StringLocalizer["uconomy:fail:not_enough_balance"]);
+                balance += amount;
+                if (balance < 0)
+                    throw new UserFriendlyException(m_StringLocalizer["economy:fail:not_enough_balance"]);
 
                 data[m_TableName] = balance;
                 return balance;
+            });
+        }
+
+        public Task SetAccountAsync(IAccountId accountId, decimal balance)
+        {
+            return ExecuteUserDataContextAsync(accountId.OwnerType, accountId.OwnerId, data =>
+            {
+                data[m_TableName] = balance;
             });
         }
     }
