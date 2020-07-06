@@ -3,11 +3,11 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Localization;
+using OpenMod.API.Commands;
 using OpenMod.API.Prioritization;
 using OpenMod.API.Users;
 using OpenMod.Core.Commands;
 using OpenMod.Core.Users;
-using OpenMod.Economy.Core;
 
 #endregion
 
@@ -53,20 +53,9 @@ namespace OpenMod.Economy.Commands
                 throw new UserFriendlyException(m_StringLocalizer["economy:fail:self_pay"]);
 
             var contextActorBalance = (decimal?) null;
-            var actorAccountId = new AccountId
-            {
-                OwnerType = Context.Actor.Type,
-                OwnerId = Context.Actor.Id
-            };
-            var targetAccountId = new AccountId
-            {
-                OwnerType = Context.Actor.Type,
-                OwnerId = Context.Actor.Id
-            };
+            if (!isConsole) contextActorBalance = await m_Plugin.DataBase.UpdateBalanceAsync(Context.Actor.Id, Context.Actor.Type, -amount);
 
-            if (!isConsole) contextActorBalance = await m_Plugin.DataBase.UpdateBalanceAsync(actorAccountId, -amount);
-
-            var targetBalance = await m_Plugin.DataBase.UpdateBalanceAsync(targetAccountId, amount);
+            var targetBalance = await m_Plugin.DataBase.UpdateBalanceAsync(targetPlayer.Id, targetPlayer.Type, amount);
 
             await PrintAsync(contextActorBalance.HasValue
                 ? m_StringLocalizer["economy:success:pay_player", targetPlayer.DisplayName, amount,

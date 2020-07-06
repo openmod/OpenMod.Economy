@@ -1,7 +1,6 @@
 ﻿#region
 
 using OpenMod.Core.Eventing;
-using OpenMod.Economy.API;
 
 #endregion
 
@@ -9,14 +8,16 @@ namespace OpenMod.Economy.Events
 {
     public class ChangeBalanceEvent : Event
     {
-        public ChangeBalanceEvent(IAccountId accountId, decimal balance, decimal amount)
+        public ChangeBalanceEvent(string ownerId, string ownerType, decimal balance, decimal amount)
         {
-            AccountId = accountId;
+            OwnerId = ownerId;
+            OwnerType = ownerType;
             Balance = balance;
             Amount = amount;
         }
 
-        public IAccountId AccountId { get; }
+        public string OwnerId { get; }
+        public string OwnerType { get; }
         public decimal Balance { get; }
         public decimal Amount { get; }
     }

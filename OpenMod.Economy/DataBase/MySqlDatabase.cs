@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
 using MySql.Data.MySqlClient;
-using OpenMod.Core.Commands;
 using OpenMod.Economy.API;
-using MySqlHelper = OpenMod.Database.Helper.MySqlHelper;
+using OpenMod.Extensions.Economy.Abstractions;
+using MySqlHelper = OpenMod.Economy.Helpers.MySqlHelper;
 
 #endregion
 
@@ -27,62 +27,62 @@ namespace OpenMod.Economy.DataBase
             m_TableName = tableName;
         }
 
-        public Task<decimal> GetBalanceAsync(IAccountId accountId)
+        public Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
         {
-            var uniqueId = $"{accountId.OwnerType}_{accountId.OwnerId}";
             return ExecuteMySqlContextAsync(async command =>
             {
-                command.Parameters.Add("@uniqueId", MySqlDbType.VarChar).Value = uniqueId;
+                command.Parameters.Add("@ownerid", MySqlDbType.VarChar).Value = ownerId;
+                command.Parameters.Add("@ownertype", MySqlDbType.VarChar).Value = ownerType;
                 command.CommandText = "SELECT `Balance` " +
                                       $"FROM `{m_TableName}` " +
-                                      "WHERE `UniqueId`=@uniqueId;";
+                                      "WHERE `Id` = @ownerid AND `Type` = @ownertype;";
 
                 if (await command.ExecuteScalarAsync() is decimal balance) return balance;
 
-                await CreateAccountIntenalAsync(uniqueId, m_DefaultBalance);
+                await CreateAccountIntenalAsync(ownerId, ownerType, m_DefaultBalance);
                 return m_DefaultBalance;
             });
         }
 
-        public Task<decimal> UpdateBalanceAsync(IAccountId accountId, decimal amount)
+        public Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount)
         {
-            var uniqueId = $"{accountId.OwnerType}_{accountId.OwnerId}";
             return ExecuteMySqlContextAsync(async command =>
             {
-                command.Parameters.Add("@uniqueId", MySqlDbType.VarChar).Value = uniqueId;
+                command.Parameters.Add("@ownerid", MySqlDbType.VarChar).Value = ownerId;
+                command.Parameters.Add("@ownertype", MySqlDbType.VarChar).Value = ownerType;
                 command.Parameters.Add("@amount", MySqlDbType.Decimal).Value = amount;
                 command.CommandText = $"UPDATE `{m_TableName}` " +
                                       "SET `Balance` = `Balance` + @amount " +
-                                      "WHERE `UniqueId` = @uniqueId;";
+                                      "WHERE `Id` = @ownerid AND `Type` = @ownertype;";
 
                 if (await command.ExecuteNonQueryAsync() > 0)
                 {
-                    var balance = await GetBalanceAsync(accountId);
+                    var balance = await GetBalanceAsync(ownerId, ownerType);
                     if (balance >= 0 || amount >= 0)
                         return balance;
 
-                    balance = await UpdateBalanceAsync(accountId, Math.Abs(amount));
-                    throw new UserFriendlyException(m_StringLocalizer["economy:fail:not_enough_balance", balance]);
+                    balance = await UpdateBalanceAsync(ownerId, ownerType, Math.Abs(amount));
+                    throw new NotEnoughBalanceException(m_StringLocalizer["economy:fail:not_enough_balance", balance]);
                 }
 
-                await CreateAccountIntenalAsync(uniqueId, m_DefaultBalance);
-                return await UpdateBalanceAsync(accountId, amount);
+                await CreateAccountIntenalAsync(ownerId, ownerType, m_DefaultBalance);
+                return await UpdateBalanceAsync(ownerId, ownerType, amount);
             });
         }
 
-        public async Task SetAccountAsync(IAccountId accountId, decimal balance)
+        public async Task SetAccountAsync(string ownerId, string ownerType, decimal balance)
         {
-            var uniqueId = $"{accountId.OwnerType}_{accountId.OwnerId}";
-            if (await CreateAccountIntenalAsync(uniqueId, balance))
+            if (await CreateAccountIntenalAsync(ownerId, ownerType, balance))
                 return;
 
             await ExecuteMySqlContextAsync(command =>
             {
-                command.Parameters.Add("@uniqueId", MySqlDbType.VarChar).Value = uniqueId;
+                command.Parameters.Add("@ownerid", MySqlDbType.VarChar).Value = ownerId;
+                command.Parameters.Add("@ownertype", MySqlDbType.VarChar).Value = ownerType;
                 command.Parameters.Add("@balance", MySqlDbType.Decimal).Value = balance;
                 command.CommandText = $"UPDATE `{m_TableName}` " +
                                       "SET `Balance` = @balance " +
-                                      "WHERE `UniqueId` = @uniqueId;";
+                                      "WHERE `Id` = @ownerid AND `Type` = @ownertype;";
 
                 return command.ExecuteNonQueryAsync();
             });
@@ -97,24 +97,26 @@ namespace OpenMod.Economy.DataBase
                     return;
 
                 command.CommandText = $"CREATE TABLE `{m_TableName}` (" +
-                                      "`UniqueId` VARCHAR(25), " + //The size of 25 can be small, it work for unturned player_STEAMID or discord_STEAMID 
+                                      "`Id` VARCHAR(255), " + //The size of 25 can be small, it work for unturned player_STEAMID or discord_STEAMID 
+                                      "`Type` VARCHAR(20), " +
                                       "`Balance` DECIMAL NOT NULL, " +
-                                      "PRIMARY KEY(`UniqueId`)) " +
-                                      "COLLATE='utf32_general_ci';";
+                                      "PRIMARY KEY(`Id`, `Type`)) " +
+                                      "COLLATE='utf8mb4_general_ci';";
 
                 await command.ExecuteNonQueryAsync();
             });
         }
 
-        private Task<bool> CreateAccountIntenalAsync(string uniqueId, decimal balance)
+        private Task<bool> CreateAccountIntenalAsync(string ownerId, string ownerType, decimal balance)
         {
             return ExecuteMySqlContextAsync(async command =>
             {
-                command.Parameters.Add("@uniqueId", MySqlDbType.VarChar).Value = uniqueId;
+                command.Parameters.Add("@ownerid", MySqlDbType.VarChar).Value = ownerId;
+                command.Parameters.Add("@ownertype", MySqlDbType.VarChar).Value = ownerType;
                 command.Parameters.Add("@balance", MySqlDbType.Decimal).Value = balance;
                 command.CommandText = $"INSERT IGNORE INTO `{m_TableName}` " +
-                                      "(`UniqueId`, `Balance`) VALUES " +
-                                      "(@uniqueId, @balance);";
+                                      "(`Id`, `Type`, `Balance`) VALUES " +
+                                      "(@ownerid, @ownertype, @balance);";
 
                 return await command.ExecuteNonQueryAsync() > 0;
             });

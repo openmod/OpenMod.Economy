@@ -2,12 +2,13 @@
 
 using System;
 using System.Threading.Tasks;
+using OpenMod.Extensions.Economy.Abstractions;
 
 #endregion
 
 namespace OpenMod.Economy.API
 {
-    public interface IEconomyDatabase : IAsyncDisposable // implement OpenMod.Extensions.Economy.Abstractions when ready
+    public interface IEconomyDatabase : IEconomyProvider, IAsyncDisposable
     {
         /// <summary>
         ///     Default balance used by the plugin, when creating a account
@@ -19,20 +20,5 @@ namespace OpenMod.Economy.API
         /// </summary>
         /// <returns>A Task that can be awaited until the action completes</returns>
         Task LoadDatabaseAsync();
-
-        /// <summary>
-        ///     Gets the balance
-        /// </summary>
-        /// <returns>Return the balance</returns>
-        Task<decimal> GetBalanceAsync(IAccountId accountId);
-
-        /// <summary>
-        ///     Update the balance
-        /// </summary>
-        /// <returns>Return the balance</returns>
-        Task<decimal> UpdateBalanceAsync(IAccountId accountId, decimal amount);
-
-        /// <returns>Return the balance</returns>
-        Task SetAccountAsync(IAccountId accountId, decimal balance);
     }
 }

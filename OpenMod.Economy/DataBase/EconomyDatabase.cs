@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
+using OpenMod.API.Commands;
 using OpenMod.API.Eventing;
-using OpenMod.Core.Commands;
 using OpenMod.Economy.API;
 using OpenMod.Economy.Events;
 
@@ -16,7 +16,7 @@ using OpenMod.Economy.Events;
 
 namespace OpenMod.Economy.DataBase
 {
-    public sealed class Database : IEconomyDatabase
+    public sealed class EconomyDatabase : IEconomyDatabase
     {
         private readonly IEventBus m_EventBus;
         private readonly Economy m_Plugin;
@@ -26,7 +26,7 @@ namespace OpenMod.Economy.DataBase
         private bool m_IsDisposing;
         private SemaphoreSlim m_SemaphoreSlim;
 
-        public Database(IConfiguration configuration, decimal defaultBalance,
+        public EconomyDatabase(IConfiguration configuration, decimal defaultBalance,
             IEventBus eventBus, Economy plugin,
             IServiceProvider serviceProvider, StoreType storeType, IStringLocalizer stringLocalizer)
         {
@@ -67,37 +67,6 @@ namespace OpenMod.Economy.DataBase
             await mySqlDatabase.CheckShemasAsync();
         }
 
-        public async Task<decimal> GetBalanceAsync(IAccountId accountId)
-        {
-            var balance = await m_Database.GetBalanceAsync(accountId);
-
-            var getBalanceEvent = new GetBalanceEvent(accountId, balance);
-            await m_EventBus.EmitAsync(m_Plugin, this, getBalanceEvent);
-
-            return balance;
-        }
-
-        public async Task<decimal> UpdateBalanceAsync(IAccountId accountId, decimal amount)
-        {
-            if (amount == 0)
-                throw new UserFriendlyException(m_StringLocalizer["economy:fail:invalid_amount", amount]);
-
-            var balance = await m_Database.UpdateBalanceAsync(accountId, amount);
-
-            var getBalanceEvent = new ChangeBalanceEvent(accountId, balance, amount);
-            await m_EventBus.EmitAsync(m_Plugin, this, getBalanceEvent);
-
-            return balance;
-        }
-
-        public async Task SetAccountAsync(IAccountId accountId, decimal balance)
-        {
-            await m_Database.SetAccountAsync(accountId, balance);
-
-            var getBalanceEvent = new SetAccountEvent(accountId, balance);
-            await m_EventBus.EmitAsync(m_Plugin, this, getBalanceEvent);
-        }
-
         public ValueTask DisposeAsync()
         {
             if (m_IsDisposing)
@@ -111,6 +80,37 @@ namespace OpenMod.Economy.DataBase
             m_SemaphoreSlim = null;
             m_IsDisposing = true;
             return new ValueTask(Task.CompletedTask);
+        }
+
+        public async Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
+        {
+            var balance = await m_Database.GetBalanceAsync(ownerId, ownerType);
+
+            var getBalanceEvent = new GetBalanceEvent(ownerId, ownerType, balance);
+            await m_EventBus.EmitAsync(m_Plugin, this, getBalanceEvent);
+
+            return balance;
+        }
+
+        public async Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount)
+        {
+            if (amount == 0)
+                throw new UserFriendlyException(m_StringLocalizer["economy:fail:invalid_amount", amount]);
+
+            var balance = await m_Database.UpdateBalanceAsync(ownerId, ownerType, amount);
+
+            var getBalanceEvent = new ChangeBalanceEvent(ownerId, ownerType, balance, amount);
+            await m_EventBus.EmitAsync(m_Plugin, this, getBalanceEvent);
+
+            return balance;
+        }
+
+        public async Task SetBalanceAsync(string ownerId, string ownerType, decimal balance)
+        {
+            await m_Database.SetAccountAsync(ownerId, ownerType, balance);
+
+            var getBalanceEvent = new SetAccountEvent(ownerId, ownerType, balance);
+            await m_EventBus.EmitAsync(m_Plugin, this, getBalanceEvent);
         }
     }
 }

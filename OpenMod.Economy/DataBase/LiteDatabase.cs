@@ -4,9 +4,10 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
 using OpenMod.Core.Commands;
-using OpenMod.Database.Helper;
 using OpenMod.Economy.API;
 using OpenMod.Economy.Core;
+using OpenMod.Economy.Helpers;
+using OpenMod.Extensions.Economy.Abstractions;
 
 #endregion
 
@@ -26,9 +27,9 @@ namespace OpenMod.Economy.DataBase
             m_TableName = tableName;
         }
 
-        public Task<decimal> GetBalanceAsync(IAccountId accountId)
+        public Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
         {
-            var uniqueId = $"{accountId.OwnerType}_{accountId.OwnerId}";
+            var uniqueId = $"{ownerType}_{ownerId}";
             return ExecuteLiteDbContextAsync(db =>
             {
                 var accounts = db.GetCollection<AccountBase>(m_TableName);
@@ -37,9 +38,9 @@ namespace OpenMod.Economy.DataBase
             });
         }
 
-        public Task<decimal> UpdateBalanceAsync(IAccountId accountId, decimal amount)
+        public Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount)
         {
-            var uniqueId = $"{accountId.OwnerType}_{accountId.OwnerId}";
+            var uniqueId = $"{ownerType}_{ownerId}";
             return ExecuteLiteDbContextAsync(db =>
             {
                 var accounts = db.GetCollection<AccountBase>(m_TableName);
@@ -51,7 +52,7 @@ namespace OpenMod.Economy.DataBase
 
                 account.Balance += amount;
                 if (account.Balance < 0)
-                    throw new UserFriendlyException(m_StringLocalizer["economy:fail:not_enough_balance",
+                    throw new NotEnoughBalanceException(m_StringLocalizer["economy:fail:not_enough_balance",
                         account.Balance]);
 
                 accounts.Upsert(account);
@@ -59,9 +60,9 @@ namespace OpenMod.Economy.DataBase
             });
         }
 
-        public Task SetAccountAsync(IAccountId accountId, decimal balance)
+        public Task SetAccountAsync(string ownerId, string ownerType, decimal balance)
         {
-            var uniqueId = $"{accountId.OwnerType}_{accountId.OwnerId}";
+            var uniqueId = $"{ownerType}_{ownerId}";
             return ExecuteLiteDbContextAsync(db =>
             {
                 var accounts = db.GetCollection<AccountBase>(m_TableName);

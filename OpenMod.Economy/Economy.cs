@@ -4,7 +4,8 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
-using OpenMod.Core.Commands;
+using OpenMod.API.Commands;
+using OpenMod.API.Plugins;
 using OpenMod.Core.Plugins;
 using OpenMod.Economy.API;
 
@@ -14,6 +15,7 @@ using OpenMod.Economy.API;
 
 namespace OpenMod.Economy
 {
+    //OpenModDbContext
     public sealed class Economy : OpenModPluginBase
     {
         private readonly IServiceProvider m_ServiceProvider;
@@ -42,7 +44,7 @@ namespace OpenMod.Economy
             if (DataBase != null)
                 await DataBase.DisposeAsync();
 
-            DataBase = ActivatorUtilities.CreateInstance<DataBase.Database>(m_ServiceProvider, defaultBalance,
+            DataBase = ActivatorUtilities.CreateInstance<DataBase.EconomyDatabase>(m_ServiceProvider, defaultBalance,
                 storeType);
             await DataBase.LoadDatabaseAsync();
         }

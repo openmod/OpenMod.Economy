@@ -3,12 +3,12 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Localization;
+using OpenMod.API.Commands;
 using OpenMod.API.Permissions;
 using OpenMod.API.Prioritization;
 using OpenMod.API.Users;
 using OpenMod.Core.Commands;
 using OpenMod.Core.Users;
-using OpenMod.Economy.Core;
 
 #endregion
 
@@ -63,13 +63,7 @@ namespace OpenMod.Economy.Commands
             if (!other)
                 targetData = await m_UserManager.FindUserAsync(Context.Actor.Type, Context.Actor.Id, UserSearchMode.Id);
 
-            var accountId = new AccountId
-            {
-                OwnerType = targetData.Type,
-                OwnerId = targetData.Id
-            };
-
-            var balance = await m_Plugin.DataBase.GetBalanceAsync(accountId);
+            var balance = await m_Plugin.DataBase.GetBalanceAsync(targetData.Id, targetData.Type);
             var message = other
                 ? m_StringLocalizer["economy:success:show_balance_other", balance, targetData.DisplayName]
                 : m_StringLocalizer["economy:success:show_balance", balance];
