@@ -16,7 +16,7 @@ using OpenMod.Economy.API;
 namespace OpenMod.Economy
 {
     //OpenModDbContext
-    public sealed class Economy : OpenModPluginBase
+    public sealed class Economy : OpenModUniversalPlugin
     {
         private readonly IServiceProvider m_ServiceProvider;
         private readonly IStringLocalizer m_StringLocalizer;
@@ -29,9 +29,8 @@ namespace OpenMod.Economy
 
         public IEconomyDatabase DataBase { get; set; }
 
-        public override async Task LoadAsync()
+        protected override async Task OnLoadAsync()
         {
-            await base.LoadAsync();
             if (!Enum.TryParse<StoreType>(Configuration["Store_Type"], out var storeType))
                 throw new UserFriendlyException(m_StringLocalizer["economy:fail:invalid_store_type",
                     Configuration["Store_Type"],
@@ -49,9 +48,8 @@ namespace OpenMod.Economy
             await DataBase.LoadDatabaseAsync();
         }
 
-        public override async Task UnloadAsync()
+        protected override async Task OnUnloadAsync()
         {
-            await base.UnloadAsync();
             await DataBase.DisposeAsync();
         }
     }

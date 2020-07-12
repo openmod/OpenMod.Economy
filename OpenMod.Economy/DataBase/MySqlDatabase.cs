@@ -4,7 +4,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using OpenMod.Economy.API;
 using OpenMod.Extensions.Economy.Abstractions;
 using MySqlHelper = OpenMod.Economy.Helpers.MySqlHelper;
