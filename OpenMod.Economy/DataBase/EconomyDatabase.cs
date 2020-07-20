@@ -1,93 +1,56 @@
 ﻿#region
 
 using System;
-using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
 using OpenMod.API.Commands;
 using OpenMod.API.Eventing;
+using OpenMod.API.Ioc;
+using OpenMod.API.Plugins;
 using OpenMod.Economy.API;
 using OpenMod.Economy.Events;
+using OpenMod.Extensions.Economy.Abstractions;
 
 #endregion
 
 namespace OpenMod.Economy.DataBase
 {
+    [ServiceImplementation(Lifetime = ServiceLifetime.Transient)]
     public sealed class EconomyDatabase : IEconomyDatabase
     {
+        private readonly IEconomyProvider m_Database;
+        private readonly IPluginAccessor<Economy> m_EconomyPlugin;
         private readonly IEventBus m_EventBus;
-        private readonly Economy m_Plugin;
-        private readonly IStringLocalizer m_StringLocalizer;
 
-        private IEconomyInternalDatabase m_Database;
-        private bool m_IsDisposing;
-        private SemaphoreSlim m_SemaphoreSlim;
-
-        public EconomyDatabase(IConfiguration configuration, decimal defaultBalance,
-            IEventBus eventBus, Economy plugin,
-            IServiceProvider serviceProvider, StoreType storeType, IStringLocalizer stringLocalizer)
+        public EconomyDatabase(IEventBus eventBus, IPluginAccessor<Economy> economyPlugin,
+            IServiceProvider serviceProvider)
         {
-            DefaultBalance = defaultBalance;
-
-            m_Plugin = plugin;
+            m_EconomyPlugin = economyPlugin;
             m_EventBus = eventBus;
-            m_StringLocalizer = stringLocalizer;
 
-            m_SemaphoreSlim = new SemaphoreSlim(1, 1);
-
-            var parameters = new List<object>
-            {
-                DefaultBalance,
-                configuration["Table_Name"]
-            };
-            var dataBaseType = storeType switch
+            var storeType = m_EconomyPlugin.Instance.DataStoreType;
+            var dataBaseType = m_EconomyPlugin.Instance.DataStoreType switch
             {
                 StoreType.DataStore => typeof(DataStoreDatabase),
-                StoreType.LiteDb => typeof(LiteDatabase),
+                StoreType.LiteDb => typeof(LiteDbDatabase),
                 StoreType.MySql => typeof(MySqlDatabase),
                 StoreType.UserData => typeof(UserDataDatabase),
                 _ => throw new ArgumentOutOfRangeException(nameof(storeType), storeType, null)
             };
 
             m_Database =
-                ActivatorUtilities.CreateInstance(serviceProvider, dataBaseType, parameters.ToArray()) as
-                    IEconomyInternalDatabase;
+                ActivatorUtilities.CreateInstance(serviceProvider, dataBaseType) as IEconomyProvider;
         }
 
-        public decimal DefaultBalance { get; }
-
-        public async Task LoadDatabaseAsync()
-        {
-            if (!(m_Database is MySqlDatabase mySqlDatabase))
-                return;
-
-            await mySqlDatabase.CheckShemasAsync();
-        }
-
-        public ValueTask DisposeAsync()
-        {
-            if (m_IsDisposing)
-                return new ValueTask(Task.CompletedTask);
-
-            if (m_Database is MySqlDatabase mySqlDatabase)
-                mySqlDatabase.Dispose();
-
-            m_Database = null;
-            m_SemaphoreSlim.Dispose();
-            m_SemaphoreSlim = null;
-            m_IsDisposing = true;
-            return new ValueTask(Task.CompletedTask);
-        }
+        private IStringLocalizer m_StringLocalizer => m_EconomyPlugin.Instance.StringLocalizer;
 
         public async Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
         {
             var balance = await m_Database.GetBalanceAsync(ownerId, ownerType);
 
             var getBalanceEvent = new GetBalanceEvent(ownerId, ownerType, balance);
-            await m_EventBus.EmitAsync(m_Plugin, this, getBalanceEvent);
+            await m_EventBus.EmitAsync(m_EconomyPlugin.Instance, this, getBalanceEvent);
 
             return balance;
         }
@@ -100,17 +63,25 @@ namespace OpenMod.Economy.DataBase
             var balance = await m_Database.UpdateBalanceAsync(ownerId, ownerType, amount);
 
             var getBalanceEvent = new ChangeBalanceEvent(ownerId, ownerType, balance, amount);
-            await m_EventBus.EmitAsync(m_Plugin, this, getBalanceEvent);
+            await m_EventBus.EmitAsync(m_EconomyPlugin.Instance, this, getBalanceEvent);
 
             return balance;
         }
 
         public async Task SetBalanceAsync(string ownerId, string ownerType, decimal balance)
         {
-            await m_Database.SetAccountAsync(ownerId, ownerType, balance);
+            await m_Database.SetBalanceAsync(ownerId, ownerType, balance);
 
             var getBalanceEvent = new SetAccountEvent(ownerId, ownerType, balance);
-            await m_EventBus.EmitAsync(m_Plugin, this, getBalanceEvent);
+            await m_EventBus.EmitAsync(m_EconomyPlugin.Instance, this, getBalanceEvent);
+        }
+
+        public async Task LoadDatabaseAsync()
+        {
+            if (!(m_Database is MySqlDatabase mySqlDatabase))
+                return;
+
+            await mySqlDatabase.CheckShemasAsync();
         }
     }
 }

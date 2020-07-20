@@ -8,6 +8,7 @@ using OpenMod.API.Prioritization;
 using OpenMod.API.Users;
 using OpenMod.Core.Commands;
 using OpenMod.Core.Users;
+using OpenMod.Extensions.Economy.Abstractions;
 
 #endregion
 
@@ -18,15 +19,14 @@ namespace OpenMod.Economy.Commands
     [CommandSyntax("<player> <amount>")]
     public class CommandPay : Command
     {
-        private readonly Economy m_Plugin;
+        private readonly IEconomyProvider m_EconomyProvider;
         private readonly IStringLocalizer m_StringLocalizer;
         private readonly IUserManager m_UserManager;
 
-
-        public CommandPay(Economy plugin, IStringLocalizer stringLocalizer, IUserManager userManager,
-            IServiceProvider serviceProvider) : base(serviceProvider)
+        public CommandPay(IEconomyProvider economyProvider, IServiceProvider serviceProvider,
+            IStringLocalizer stringLocalizer, IUserManager userManager) : base(serviceProvider)
         {
-            m_Plugin = plugin;
+            m_EconomyProvider = economyProvider;
             m_StringLocalizer = stringLocalizer;
             m_UserManager = userManager;
         }
@@ -53,9 +53,11 @@ namespace OpenMod.Economy.Commands
                 throw new UserFriendlyException(m_StringLocalizer["economy:fail:self_pay"]);
 
             var contextActorBalance = (decimal?) null;
-            if (!isConsole) contextActorBalance = await m_Plugin.DataBase.UpdateBalanceAsync(Context.Actor.Id, Context.Actor.Type, -amount);
+            if (!isConsole)
+                contextActorBalance =
+                    await m_EconomyProvider.UpdateBalanceAsync(Context.Actor.Id, Context.Actor.Type, -amount);
 
-            var targetBalance = await m_Plugin.DataBase.UpdateBalanceAsync(targetPlayer.Id, targetPlayer.Type, amount);
+            var targetBalance = await m_EconomyProvider.UpdateBalanceAsync(targetPlayer.Id, targetPlayer.Type, amount);
 
             await PrintAsync(contextActorBalance.HasValue
                 ? m_StringLocalizer["economy:success:pay_player", targetPlayer.DisplayName, amount,

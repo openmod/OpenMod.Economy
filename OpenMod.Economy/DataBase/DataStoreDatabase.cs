@@ -1,65 +1,77 @@
 ﻿#region
 
+using System;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Localization;
+using Cysharp.Threading.Tasks;
 using OpenMod.API.Persistence;
-using OpenMod.Economy.API;
+using OpenMod.API.Plugins;
 using OpenMod.Economy.Core;
-using OpenMod.Economy.Helpers;
 using OpenMod.Extensions.Economy.Abstractions;
 
 #endregion
 
 namespace OpenMod.Economy.DataBase
 {
-    internal sealed class DataStoreDatabase : DataStoreHelper, IEconomyInternalDatabase
+    internal sealed class DataStoreDatabase : DataBaseCore
     {
-        private readonly decimal m_DefaultBalance;
-        private readonly IStringLocalizer m_StringLocalizer;
-
-        public DataStoreDatabase(IDataStore dataStore, decimal defaultBalance, IStringLocalizer stringLocalizer,
-            string tableName) : base(tableName, dataStore)
+        public DataStoreDatabase(IPluginAccessor<Economy> economyPlugin) : base(economyPlugin)
         {
-            m_DefaultBalance = defaultBalance;
-            m_StringLocalizer = stringLocalizer;
         }
 
-        public Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
+        private IDataStore m_DataStore => EconomyPlugin.Instance.DataStore;
+
+        public override async Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
         {
             var uniqueId = $"{ownerType}_{ownerId}";
-            return ExecuteDataStoreContextAsync<AccountsCollection, decimal>(accountsData =>
+            try
             {
-                if (accountsData.Accounts.TryGetValue(uniqueId, out var balance))
-                    return balance;
-
-                accountsData.Accounts.Add(uniqueId, m_DefaultBalance);
-                return m_DefaultBalance;
-            });
+                await UniTask.SwitchToMainThread();
+                var data = await m_DataStore.LoadAsync<AccountsCollection>(TableName) ??
+                           Activator.CreateInstance<AccountsCollection>();
+                return data.Accounts.TryGetValue(uniqueId, out var balance) ? balance : DefaultBalance;
+            }
+            finally
+            {
+                await UniTask.Yield();
+            }
         }
 
-        public Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount)
+        public override async Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount)
         {
             var uniqueId = $"{ownerType}_{ownerId}";
-            return ExecuteDataStoreContextAsync<AccountsCollection, decimal>(accountsData =>
+            try
             {
-                if (!accountsData.Accounts.TryGetValue(uniqueId, out var balance))
-                    balance = m_DefaultBalance;
+                await UniTask.SwitchToMainThread();
+                var data = await m_DataStore.LoadAsync<AccountsCollection>(TableName) ??
+                           Activator.CreateInstance<AccountsCollection>();
+                if (!data.Accounts.TryGetValue(uniqueId, out var balance)) balance = DefaultBalance;
 
                 balance += amount;
                 if (balance < 0)
-                    throw new NotEnoughBalanceException(m_StringLocalizer["economy:fail:not_enough_balance", balance]);
+                    throw new NotEnoughBalanceException(StringLocalizer["economy:fail:not_enough_balance", balance]);
 
-                return accountsData.Accounts[uniqueId] = balance;
-            });
+                return data.Accounts[uniqueId] = balance;
+            }
+            finally
+            {
+                await UniTask.Yield();
+            }
         }
 
-        public Task SetAccountAsync(string ownerId, string ownerType, decimal balance)
+        public override async Task SetBalanceAsync(string ownerId, string ownerType, decimal balance)
         {
             var uniqueId = $"{ownerType}_{ownerId}";
-            return ExecuteDataStoreContextAsync<AccountsCollection>(accountsData =>
+            try
             {
-                accountsData.Accounts[uniqueId] = balance;
-            });
+                await UniTask.SwitchToMainThread();
+                var data = await m_DataStore.LoadAsync<AccountsCollection>(TableName) ??
+                           Activator.CreateInstance<AccountsCollection>();
+                data.Accounts[uniqueId] = balance;
+            }
+            finally
+            {
+                await UniTask.Yield();
+            }
         }
     }
 }

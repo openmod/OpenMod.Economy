@@ -1,20 +1,16 @@
 ﻿#region
 
-using System;
 using System.Threading.Tasks;
+using OpenMod.API.Ioc;
 using OpenMod.Extensions.Economy.Abstractions;
 
 #endregion
 
 namespace OpenMod.Economy.API
 {
-    public interface IEconomyDatabase : IEconomyProvider, IAsyncDisposable
+    [Service]
+    public interface IEconomyDatabase : IEconomyProvider
     {
-        /// <summary>
-        ///     Default balance used by the plugin, when creating a account
-        /// </summary>
-        decimal DefaultBalance { get; }
-
         /// <summary>
         ///     Called when economy loads, used to prepare database
         /// </summary>

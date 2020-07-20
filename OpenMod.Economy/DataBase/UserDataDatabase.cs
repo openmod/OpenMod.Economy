@@ -1,65 +1,60 @@
 ﻿#region
 
+using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Localization;
+using OpenMod.API.Plugins;
 using OpenMod.API.Users;
-using OpenMod.Economy.API;
-using OpenMod.Economy.Helpers;
 using OpenMod.Extensions.Economy.Abstractions;
 
 #endregion
 
 namespace OpenMod.Economy.DataBase
 {
-    internal sealed class UserDataDatabase : UserDataHelper, IEconomyInternalDatabase
+    internal sealed class UserDataDatabase : DataBaseCore
     {
-        private readonly decimal m_DefaultBalance;
-        private readonly IStringLocalizer m_StringLocalizer;
-        private readonly string m_TableName;
+        private readonly IUserDataStore m_UserDataStore;
 
-        public UserDataDatabase(decimal defaultBalance,
-            IStringLocalizer stringLocalizer, string tableName, IUserDataStore userDataStore) : base(userDataStore)
+        public UserDataDatabase(IPluginAccessor<Economy> economyPlugin, IUserDataStore userDataStore) : base(
+            economyPlugin)
         {
-            m_DefaultBalance = defaultBalance;
-            m_StringLocalizer = stringLocalizer;
-            m_TableName = tableName;
+            m_UserDataStore = userDataStore;
         }
 
-        public Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
+        public override async Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
         {
-            return ExecuteUserDataContextAsync(ownerId, ownerType, data =>
-            {
-                if (data.TryGetValue(m_TableName, out var balance))
-                    return (decimal) balance;
+            var userData = await m_UserDataStore.GetUserDataAsync(ownerId, ownerType);
+            userData.Data ??= new Dictionary<string, object>();
 
-                data.Add(m_TableName, m_DefaultBalance);
-                return m_DefaultBalance;
-            });
+            if (userData.Data.TryGetValue(TableName, out var balance)) return (decimal) balance;
+
+            return DefaultBalance;
         }
 
-        public Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount)
+        public override async Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount)
         {
-            return ExecuteUserDataContextAsync(ownerId, ownerType, data =>
-            {
-                decimal balance;
-                if (data.TryGetValue(m_TableName, out var balanceObj))
-                    balance = (decimal) balanceObj;
-                else
-                    balance = m_DefaultBalance;
+            var userData = await m_UserDataStore.GetUserDataAsync(ownerId, ownerType);
+            userData.Data ??= new Dictionary<string, object>();
 
-                balance += amount;
-                if (balance < 0)
-                    throw new NotEnoughBalanceException(m_StringLocalizer["economy:fail:not_enough_balance"]);
+            decimal balance;
+            if (userData.Data.TryGetValue(TableName, out var balanceObj))
+                balance = (decimal) balanceObj;
+            else
+                balance = DefaultBalance;
 
-                data[m_TableName] = balance;
-                return balance;
-            });
+            balance += amount;
+            if (balance < 0)
+                throw new NotEnoughBalanceException(StringLocalizer["economy:fail:not_enough_balance"]);
+
+            userData.Data[TableName] = balance;
+            return balance;
         }
 
-        public Task SetAccountAsync(string ownerId, string ownerType, decimal balance)
+        public override async Task SetBalanceAsync(string ownerId, string ownerType, decimal balance)
         {
-            return ExecuteUserDataContextAsync(ownerId, ownerType,
-                data => { data[m_TableName] = balance; });
+            var userData = await m_UserDataStore.GetUserDataAsync(ownerId, ownerType);
+            userData.Data ??= new Dictionary<string, object>();
+
+            userData.Data[TableName] = balance;
         }
     }
 }

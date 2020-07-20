@@ -1,5 +1,4 @@
+Connection_String: file.db #This is for LiteDb, Mysql: SERVER=127.0.0.1;PORT=3306;DATABASE=OpenMod;UID=root;PASSWORD=password123;CONNECTION TIMEOUT=30
 Default_Balance: 300
-LiteDb_Connection_String: file.db
-MySql_Connection_String: file.db
 Store_Type: DataStore
 Table_Name: economy

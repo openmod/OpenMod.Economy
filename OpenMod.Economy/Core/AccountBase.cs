@@ -1,10 +1,18 @@
-﻿using System;
+﻿#region
+
+using System;
 using LiteDB;
+
+#endregion
 
 namespace OpenMod.Economy.Core
 {
     public class AccountBase
     {
+        [BsonIgnore] private string m_OwnerId;
+
+        [BsonIgnore] private string m_OwnerType;
+
         [BsonId]
         public string UniqueId
         {
@@ -19,12 +27,6 @@ namespace OpenMod.Economy.Core
                 m_OwnerId = values[1].ToLower();
             }
         }
-
-        [BsonIgnore] 
-        private string m_OwnerType;
-
-        [BsonIgnore]
-        private string m_OwnerId;
 
         public decimal Balance { get; set; }
     }

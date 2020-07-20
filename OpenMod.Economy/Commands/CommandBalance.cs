@@ -9,6 +9,7 @@ using OpenMod.API.Prioritization;
 using OpenMod.API.Users;
 using OpenMod.Core.Commands;
 using OpenMod.Core.Users;
+using OpenMod.Extensions.Economy.Abstractions;
 
 #endregion
 
@@ -19,21 +20,20 @@ namespace OpenMod.Economy.Commands
     [CommandSyntax("[player]")]
     public class CommandBalance : Command
     {
+        private readonly IEconomyProvider m_EconomyProvider;
         private readonly IPermissionChecker m_PermissionChecker;
-        private readonly Economy m_Plugin;
         private readonly IStringLocalizer m_StringLocalizer;
         private readonly IUserManager m_UserManager;
 
-
-        public CommandBalance(IPermissionChecker permissionChecker, Economy plugin, IStringLocalizer stringLocalizer,
-            IUserManager userManager, IServiceProvider serviceProvider) : base(serviceProvider)
+        public CommandBalance(IEconomyProvider economyProvider, IPermissionChecker permissionChecker,
+            IServiceProvider serviceProvider, IStringLocalizer stringLocalizer, IUserManager userManager) : base(
+            serviceProvider)
         {
+            m_EconomyProvider = economyProvider;
             m_PermissionChecker = permissionChecker;
-            m_Plugin = plugin;
             m_StringLocalizer = stringLocalizer;
             m_UserManager = userManager;
         }
-
 
         protected override async Task OnExecuteAsync()
         {
@@ -63,7 +63,7 @@ namespace OpenMod.Economy.Commands
             if (!other)
                 targetData = await m_UserManager.FindUserAsync(Context.Actor.Type, Context.Actor.Id, UserSearchMode.Id);
 
-            var balance = await m_Plugin.DataBase.GetBalanceAsync(targetData.Id, targetData.Type);
+            var balance = await m_EconomyProvider.GetBalanceAsync(targetData.Id, targetData.Type);
             var message = other
                 ? m_StringLocalizer["economy:success:show_balance_other", balance, targetData.DisplayName]
                 : m_StringLocalizer["economy:success:show_balance", balance];
