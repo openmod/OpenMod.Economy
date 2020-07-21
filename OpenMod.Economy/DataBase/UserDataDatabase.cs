@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using OpenMod.API.Plugins;
 using OpenMod.API.Users;
+using OpenMod.Economy.API;
 using OpenMod.Extensions.Economy.Abstractions;
 
 #endregion
@@ -12,49 +13,78 @@ namespace OpenMod.Economy.DataBase
 {
     internal sealed class UserDataDatabase : DataBaseCore
     {
+        private readonly IEconomyDispatcher m_EconomyDispatcher;
         private readonly IUserDataStore m_UserDataStore;
 
-        public UserDataDatabase(IPluginAccessor<Economy> economyPlugin, IUserDataStore userDataStore) : base(
+        public UserDataDatabase(IEconomyDispatcher dispatcher, IPluginAccessor<Economy> economyPlugin,
+            IUserDataStore userDataStore) : base(
             economyPlugin)
         {
+            m_EconomyDispatcher = dispatcher;
             m_UserDataStore = userDataStore;
         }
 
-        public override async Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
+        public override Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
         {
-            var userData = await m_UserDataStore.GetUserDataAsync(ownerId, ownerType);
-            userData.Data ??= new Dictionary<string, object>();
+            var tcs = new TaskCompletionSource<decimal>();
 
-            if (userData.Data.TryGetValue(TableName, out var balance)) return (decimal) balance;
+            m_EconomyDispatcher.Enqueue(async () =>
+            {
+                var userData = await m_UserDataStore.GetUserDataAsync(ownerId, ownerType);
+                userData.Data ??= new Dictionary<string, object>();
 
-            return DefaultBalance;
+                var balance = DefaultBalance;
+                if (userData.Data.TryGetValue(TableName, out var balanceObj))
+                    balance = (decimal) balanceObj;
+
+                tcs.SetResult(balance);
+            });
+
+            return tcs.Task;
         }
 
-        public override async Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount)
+        public override Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount)
         {
-            var userData = await m_UserDataStore.GetUserDataAsync(ownerId, ownerType);
-            userData.Data ??= new Dictionary<string, object>();
+            var tcs = new TaskCompletionSource<decimal>();
 
-            decimal balance;
-            if (userData.Data.TryGetValue(TableName, out var balanceObj))
-                balance = (decimal) balanceObj;
-            else
-                balance = DefaultBalance;
+            m_EconomyDispatcher.Enqueue(async () =>
+            {
+                var userData = await m_UserDataStore.GetUserDataAsync(ownerId, ownerType);
+                userData.Data ??= new Dictionary<string, object>();
 
-            balance += amount;
-            if (balance < 0)
-                throw new NotEnoughBalanceException(StringLocalizer["economy:fail:not_enough_balance"]);
+                decimal balance;
+                if (userData.Data.TryGetValue(TableName, out var balanceObj))
+                    balance = (decimal) balanceObj;
+                else
+                    balance = DefaultBalance;
 
-            userData.Data[TableName] = balance;
-            return balance;
+                balance += amount;
+                if (balance < 0)
+                    throw new NotEnoughBalanceException(StringLocalizer["economy:fail:not_enough_balance"]);
+
+                userData.Data[TableName] = balance;
+                await m_UserDataStore.SaveUserDataAsync(userData);
+
+                tcs.SetResult(balance);
+            });
+
+            return tcs.Task;
         }
 
-        public override async Task SetBalanceAsync(string ownerId, string ownerType, decimal balance)
+        public override Task SetBalanceAsync(string ownerId, string ownerType, decimal balance)
         {
-            var userData = await m_UserDataStore.GetUserDataAsync(ownerId, ownerType);
-            userData.Data ??= new Dictionary<string, object>();
+            var tcs = new TaskCompletionSource<decimal>();
 
-            userData.Data[TableName] = balance;
+            m_EconomyDispatcher.Enqueue(async () =>
+            {
+                var userData = await m_UserDataStore.GetUserDataAsync(ownerId, ownerType);
+                userData.Data ??= new Dictionary<string, object>();
+
+                userData.Data[TableName] = balance;
+                await m_UserDataStore.SaveUserDataAsync(userData);
+            });
+
+            return tcs.Task;
         }
     }
 }

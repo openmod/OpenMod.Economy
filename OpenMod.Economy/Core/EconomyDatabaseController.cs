@@ -9,38 +9,28 @@ using OpenMod.API.Eventing;
 using OpenMod.API.Ioc;
 using OpenMod.API.Plugins;
 using OpenMod.Economy.API;
+using OpenMod.Economy.DataBase;
 using OpenMod.Economy.Events;
 using OpenMod.Extensions.Economy.Abstractions;
 
 #endregion
 
-namespace OpenMod.Economy.DataBase
+namespace OpenMod.Economy.Core
 {
-    [ServiceImplementation(Lifetime = ServiceLifetime.Transient)]
-    public sealed class EconomyDatabase : IEconomyDatabase
+    [ServiceImplementation(Lifetime = ServiceLifetime.Singleton)]
+    public sealed class EconomyDatabaseController : IEconomyController
     {
-        private readonly IEconomyProvider m_Database;
         private readonly IPluginAccessor<Economy> m_EconomyPlugin;
         private readonly IEventBus m_EventBus;
+        private readonly IServiceProvider m_ServiceProvider;
+        private IEconomyProvider m_Database;
 
-        public EconomyDatabase(IEventBus eventBus, IPluginAccessor<Economy> economyPlugin,
+        public EconomyDatabaseController(IPluginAccessor<Economy> economyPlugin, IEventBus eventBus,
             IServiceProvider serviceProvider)
         {
             m_EconomyPlugin = economyPlugin;
             m_EventBus = eventBus;
-
-            var storeType = m_EconomyPlugin.Instance.DataStoreType;
-            var dataBaseType = m_EconomyPlugin.Instance.DataStoreType switch
-            {
-                StoreType.DataStore => typeof(DataStoreDatabase),
-                StoreType.LiteDb => typeof(LiteDbDatabase),
-                StoreType.MySql => typeof(MySqlDatabase),
-                StoreType.UserData => typeof(UserDataDatabase),
-                _ => throw new ArgumentOutOfRangeException(nameof(storeType), storeType, null)
-            };
-
-            m_Database =
-                ActivatorUtilities.CreateInstance(serviceProvider, dataBaseType) as IEconomyProvider;
+            m_ServiceProvider = serviceProvider;
         }
 
         private IStringLocalizer m_StringLocalizer => m_EconomyPlugin.Instance.StringLocalizer;
@@ -76,8 +66,22 @@ namespace OpenMod.Economy.DataBase
             await m_EventBus.EmitAsync(m_EconomyPlugin.Instance, this, getBalanceEvent);
         }
 
-        public async Task LoadDatabaseAsync()
+        public async Task LoadDatabaseControllerAsync()
         {
+            if (m_EconomyPlugin.Instance == null)
+                return;
+
+            Enum.TryParse<StoreType>(m_EconomyPlugin.Instance.Configuration["Store_Type"], true, out var storeType);
+            var dataBaseType = storeType switch
+            {
+                StoreType.DataStore => typeof(DataStoreDatabase),
+                StoreType.LiteDb => typeof(LiteDbDatabase),
+                StoreType.MySql => typeof(MySqlDatabase),
+                StoreType.UserData => typeof(UserDataDatabase),
+                _ => throw new ArgumentOutOfRangeException(nameof(storeType), storeType, null)
+            };
+
+            m_Database = ActivatorUtilities.CreateInstance(m_ServiceProvider, dataBaseType) as IEconomyProvider;
             if (!(m_Database is MySqlDatabase mySqlDatabase))
                 return;
 

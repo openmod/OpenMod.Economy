@@ -2,9 +2,9 @@
 
 using System;
 using System.Threading.Tasks;
-using Cysharp.Threading.Tasks;
 using OpenMod.API.Persistence;
 using OpenMod.API.Plugins;
+using OpenMod.Economy.API;
 using OpenMod.Economy.Core;
 using OpenMod.Extensions.Economy.Abstractions;
 
@@ -14,34 +14,39 @@ namespace OpenMod.Economy.DataBase
 {
     internal sealed class DataStoreDatabase : DataBaseCore
     {
-        public DataStoreDatabase(IPluginAccessor<Economy> economyPlugin) : base(economyPlugin)
+        private readonly IEconomyDispatcher m_EconomyDispatcher;
+
+        public DataStoreDatabase(IEconomyDispatcher dispatcher, IPluginAccessor<Economy> economyPlugin) : base(
+            economyPlugin)
         {
+            m_EconomyDispatcher = dispatcher;
         }
 
         private IDataStore m_DataStore => EconomyPlugin.Instance.DataStore;
 
-        public override async Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
+        public override Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
         {
             var uniqueId = $"{ownerType}_{ownerId}";
-            try
+            var tcs = new TaskCompletionSource<decimal>();
+
+            m_EconomyDispatcher.Enqueue(async () =>
             {
-                await UniTask.SwitchToMainThread();
                 var data = await m_DataStore.LoadAsync<AccountsCollection>(TableName) ??
                            Activator.CreateInstance<AccountsCollection>();
-                return data.Accounts.TryGetValue(uniqueId, out var balance) ? balance : DefaultBalance;
-            }
-            finally
-            {
-                await UniTask.Yield();
-            }
+
+                tcs.SetResult(data.Accounts.TryGetValue(uniqueId, out var balance) ? balance : DefaultBalance);
+            });
+
+            return tcs.Task;
         }
 
-        public override async Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount)
+        public override Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount)
         {
             var uniqueId = $"{ownerType}_{ownerId}";
-            try
+            var tcs = new TaskCompletionSource<decimal>();
+
+            m_EconomyDispatcher.Enqueue(async () =>
             {
-                await UniTask.SwitchToMainThread();
                 var data = await m_DataStore.LoadAsync<AccountsCollection>(TableName) ??
                            Activator.CreateInstance<AccountsCollection>();
                 if (!data.Accounts.TryGetValue(uniqueId, out var balance)) balance = DefaultBalance;
@@ -50,28 +55,30 @@ namespace OpenMod.Economy.DataBase
                 if (balance < 0)
                     throw new NotEnoughBalanceException(StringLocalizer["economy:fail:not_enough_balance", balance]);
 
-                return data.Accounts[uniqueId] = balance;
-            }
-            finally
-            {
-                await UniTask.Yield();
-            }
+                data.Accounts[uniqueId] = balance;
+                await m_DataStore.SaveAsync(TableName, data);
+
+                tcs.SetResult(balance);
+            });
+
+            return tcs.Task;
         }
 
-        public override async Task SetBalanceAsync(string ownerId, string ownerType, decimal balance)
+        public override Task SetBalanceAsync(string ownerId, string ownerType, decimal balance)
         {
             var uniqueId = $"{ownerType}_{ownerId}";
-            try
+            var tcs = new TaskCompletionSource<decimal>();
+
+            m_EconomyDispatcher.Enqueue(async () =>
             {
-                await UniTask.SwitchToMainThread();
                 var data = await m_DataStore.LoadAsync<AccountsCollection>(TableName) ??
                            Activator.CreateInstance<AccountsCollection>();
+
                 data.Accounts[uniqueId] = balance;
-            }
-            finally
-            {
-                await UniTask.Yield();
-            }
+                await m_DataStore.SaveAsync(TableName, data);
+            });
+
+            return tcs.Task;
         }
     }
 }
