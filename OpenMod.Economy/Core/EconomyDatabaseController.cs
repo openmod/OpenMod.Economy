@@ -18,7 +18,7 @@ using OpenMod.Extensions.Economy.Abstractions;
 namespace OpenMod.Economy.Core
 {
     [ServiceImplementation(Lifetime = ServiceLifetime.Singleton)]
-    public sealed class EconomyDatabaseController : IEconomyController
+    public sealed class EconomyDatabaseController : IEconomyProvider
     {
         private readonly IPluginAccessor<Economy> m_EconomyPlugin;
         private readonly IEventBus m_EventBus;
@@ -28,17 +28,21 @@ namespace OpenMod.Economy.Core
         public EconomyDatabaseController(IPluginAccessor<Economy> economyPlugin, IEventBus eventBus,
             IServiceProvider serviceProvider)
         {
+            Console.WriteLine("Construct");
             m_EconomyPlugin = economyPlugin;
             m_EventBus = eventBus;
             m_ServiceProvider = serviceProvider;
         }
 
+        public string CurrencyName => m_Database.CurrencyName;
+        public string CurrencySymbol => m_Database.CurrencySymbol;
         private IStringLocalizer m_StringLocalizer => m_EconomyPlugin.Instance.StringLocalizer;
 
         public async Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
         {
+            Console.WriteLine("rise 5 " + (m_Database != null));
             var balance = await m_Database.GetBalanceAsync(ownerId, ownerType);
-
+            Console.WriteLine("rise 6");
             var getBalanceEvent = new GetBalanceEvent(ownerId, ownerType, balance);
             await m_EventBus.EmitAsync(m_EconomyPlugin.Instance, this, getBalanceEvent);
 
@@ -48,7 +52,7 @@ namespace OpenMod.Economy.Core
         public async Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount)
         {
             if (amount == 0)
-                throw new UserFriendlyException(m_StringLocalizer["economy:fail:invalid_amount", amount]);
+                throw new UserFriendlyException(m_StringLocalizer["economy:fail:invalid_amount", new {amount}]);
 
             var balance = await m_Database.UpdateBalanceAsync(ownerId, ownerType, amount);
 
@@ -66,11 +70,12 @@ namespace OpenMod.Economy.Core
             await m_EventBus.EmitAsync(m_EconomyPlugin.Instance, this, getBalanceEvent);
         }
 
-        public async Task LoadDatabaseControllerAsync()
+        public async Task LoadControllerAsync()
         {
+            Console.WriteLine("rise 1");
             if (m_EconomyPlugin.Instance == null)
                 return;
-
+            Console.WriteLine("rise 2");
             Enum.TryParse<StoreType>(m_EconomyPlugin.Instance.Configuration["Store_Type"], true, out var storeType);
             var dataBaseType = storeType switch
             {
@@ -80,8 +85,9 @@ namespace OpenMod.Economy.Core
                 StoreType.UserData => typeof(UserDataDatabase),
                 _ => throw new ArgumentOutOfRangeException(nameof(storeType), storeType, null)
             };
-
+            Console.WriteLine("rise 3 " + (m_Database != null));
             m_Database = ActivatorUtilities.CreateInstance(m_ServiceProvider, dataBaseType) as IEconomyProvider;
+            Console.WriteLine("rise 4 " + (m_Database != null));
             if (!(m_Database is MySqlDatabase mySqlDatabase))
                 return;
 

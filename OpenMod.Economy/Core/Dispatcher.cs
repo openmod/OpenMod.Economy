@@ -17,7 +17,6 @@ namespace OpenMod.Economy.Core
     {
         private static readonly ConcurrentQueue<Action> s_QueueActions = new ConcurrentQueue<Action>();
         private static readonly AutoResetEvent s_WaitHandle = new AutoResetEvent(false);
-
         private readonly ILogger<Economy> m_Logger;
 
         private bool m_Disposed;

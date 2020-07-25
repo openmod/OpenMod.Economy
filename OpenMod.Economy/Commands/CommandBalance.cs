@@ -8,6 +8,7 @@ using OpenMod.API.Permissions;
 using OpenMod.API.Prioritization;
 using OpenMod.API.Users;
 using OpenMod.Core.Commands;
+using OpenMod.Core.Permissions;
 using OpenMod.Core.Users;
 using OpenMod.Extensions.Economy.Abstractions;
 
@@ -16,21 +17,22 @@ using OpenMod.Extensions.Economy.Abstractions;
 namespace OpenMod.Economy.Commands
 {
     [Command("balance", Priority = Priority.Normal)]
-    [CommandDescription("Get the balance of a player")]
+    [CommandDescription("Shows the player's balance")]
     [CommandSyntax("[player]")]
+    [RegisterCommandPermission(OthersPerm, Description = "Permission to see the balance of other players")]
     public class CommandBalance : Command
     {
+        public const string OthersPerm = "others";
+
         private readonly IEconomyProvider m_EconomyProvider;
-        private readonly IPermissionChecker m_PermissionChecker;
         private readonly IStringLocalizer m_StringLocalizer;
         private readonly IUserManager m_UserManager;
 
-        public CommandBalance(IEconomyProvider economyProvider, IPermissionChecker permissionChecker,
+        public CommandBalance(IEconomyProvider economyProvider,
             IServiceProvider serviceProvider, IStringLocalizer stringLocalizer, IUserManager userManager) : base(
             serviceProvider)
         {
             m_EconomyProvider = economyProvider;
-            m_PermissionChecker = permissionChecker;
             m_StringLocalizer = stringLocalizer;
             m_UserManager = userManager;
         }
@@ -45,15 +47,14 @@ namespace OpenMod.Economy.Commands
 
             if (Context.Parameters.Length > 0)
             {
-                var otherPermission = await m_PermissionChecker.CheckPermissionAsync(Context.Actor, "balance.other") ==
-                                      PermissionGrantResult.Grant;
+                var otherPermission = await CheckPermissionAsync(OthersPerm) == PermissionGrantResult.Grant;
                 var target = await Context.Parameters.GetAsync<string>(0);
                 targetData = await m_UserManager.FindUserAsync(KnownActorTypes.Player, target, UserSearchMode.NameOrId);
 
                 if (otherPermission)
                 {
                     if (targetData == null)
-                        throw new UserFriendlyException(m_StringLocalizer["economy:fail:user_not_found", target]);
+                        throw new UserFriendlyException(m_StringLocalizer["economy:fail:user_not_found", new {target}]);
 
                     if (!Context.Actor.Id.Equals(targetData.Id, StringComparison.OrdinalIgnoreCase))
                         other = true;
@@ -65,8 +66,10 @@ namespace OpenMod.Economy.Commands
 
             var balance = await m_EconomyProvider.GetBalanceAsync(targetData.Id, targetData.Type);
             var message = other
-                ? m_StringLocalizer["economy:success:show_balance_other", balance, targetData.DisplayName]
-                : m_StringLocalizer["economy:success:show_balance", balance];
+                ? m_StringLocalizer["economy:success:show_balance_other",
+                    new {balance, m_EconomyProvider.CurrencySymbol, targetData.DisplayName}]
+                : m_StringLocalizer["economy:success:show_balance", new {balance, m_EconomyProvider.CurrencySymbol}];
+
             await PrintAsync(message);
         }
     }
