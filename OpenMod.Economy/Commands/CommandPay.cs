@@ -59,12 +59,7 @@ namespace OpenMod.Economy.Commands
                 contextActorBalance =
                     await m_EconomyProvider.UpdateBalanceAsync(Context.Actor.Id, Context.Actor.Type, -amount);
 
-            var targetBalance = amount;
-            if (Context.Parameters.Length == 3) //todo Need to be removed, just to test
-                await m_EconomyProvider.SetBalanceAsync(targetPlayer.Id, targetPlayer.Type, amount);
-            else
-                targetBalance = await m_EconomyProvider.UpdateBalanceAsync(targetPlayer.Id, targetPlayer.Type, amount);
-
+            var targetBalance = await m_EconomyProvider.UpdateBalanceAsync(targetPlayer.Id, targetPlayer.Type, amount);
             var printToCaller = m_StringLocalizer[
                 contextActorBalance.HasValue ? "economy:success:pay_player" : "economy:success:pay_console",
                 new

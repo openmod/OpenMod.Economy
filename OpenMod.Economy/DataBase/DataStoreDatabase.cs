@@ -35,7 +35,7 @@ namespace OpenMod.Economy.DataBase
                            Activator.CreateInstance<AccountsCollection>();
 
                 tcs.SetResult(data.Accounts.TryGetValue(uniqueId, out var balance) ? balance : DefaultBalance);
-            });
+            }, exception => tcs.SetException(exception));
 
             return tcs.Task;
         }
@@ -59,7 +59,7 @@ namespace OpenMod.Economy.DataBase
                 await m_DataStore.SaveAsync(TableName, data);
 
                 tcs.SetResult(balance);
-            });
+            }, exception => tcs.SetException(exception));
 
             return tcs.Task;
         }
@@ -76,7 +76,7 @@ namespace OpenMod.Economy.DataBase
 
                 data.Accounts[uniqueId] = balance;
                 await m_DataStore.SaveAsync(TableName, data);
-            });
+            }, exception => tcs.SetException(exception));
 
             return tcs.Task;
         }

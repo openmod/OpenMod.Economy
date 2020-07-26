@@ -31,9 +31,29 @@ namespace OpenMod.Economy.Core
             m_Disposed = true;
         }
 
-        public void Enqueue(Action action)
+        public void Enqueue(Action action, Action<Exception> exceptionHandler = null)
         {
-            s_QueueActions.Enqueue(action);
+            if (action == null)
+                throw new ArgumentNullException(nameof(action));
+
+            s_QueueActions.Enqueue(() =>
+            {
+                try
+                {
+                    action();
+                }
+                catch (Exception ex)
+                {
+                    if (exceptionHandler != null)
+                    {
+                        exceptionHandler(ex);
+                    }
+                    else
+                    {
+                        m_Logger.LogError(ex, "Exception while dispatching a task");
+                    }
+                }
+            });
             s_WaitHandle.Set();
         }
 
@@ -48,14 +68,17 @@ namespace OpenMod.Economy.Core
             {
                 s_WaitHandle.WaitOne();
                 while (s_QueueActions.TryDequeue(out var action))
+                {
+                    //Try catch prevents exception in case of direct insert on ConcurrentQueue instead of Enqueue it
                     try
                     {
                         action();
                     }
                     catch (Exception ex)
                     {
-                        m_Logger.LogWarning(ex, "Exception in Dispatcher: ");
+                        m_Logger.LogError(ex, "Exception while dispatching a task");
                     }
+                }
             }
         }
     }
