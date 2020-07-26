@@ -28,7 +28,6 @@ namespace OpenMod.Economy.Core
         public EconomyDatabaseController(IPluginAccessor<Economy> economyPlugin, IEventBus eventBus,
             IServiceProvider serviceProvider)
         {
-            Console.WriteLine("Construct");
             m_EconomyPlugin = economyPlugin;
             m_EventBus = eventBus;
             m_ServiceProvider = serviceProvider;
@@ -40,9 +39,7 @@ namespace OpenMod.Economy.Core
 
         public async Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
         {
-            Console.WriteLine("rise 5 " + (m_Database != null));
             var balance = await m_Database.GetBalanceAsync(ownerId, ownerType);
-            Console.WriteLine("rise 6");
             var getBalanceEvent = new GetBalanceEvent(ownerId, ownerType, balance);
             await m_EventBus.EmitAsync(m_EconomyPlugin.Instance, this, getBalanceEvent);
 
@@ -72,10 +69,9 @@ namespace OpenMod.Economy.Core
 
         public async Task LoadControllerAsync()
         {
-            Console.WriteLine("rise 1");
             if (m_EconomyPlugin.Instance == null)
                 return;
-            Console.WriteLine("rise 2");
+
             Enum.TryParse<StoreType>(m_EconomyPlugin.Instance.Configuration["Store_Type"], true, out var storeType);
             var dataBaseType = storeType switch
             {
@@ -85,9 +81,8 @@ namespace OpenMod.Economy.Core
                 StoreType.UserData => typeof(UserDataDatabase),
                 _ => throw new ArgumentOutOfRangeException(nameof(storeType), storeType, null)
             };
-            Console.WriteLine("rise 3 " + (m_Database != null));
+
             m_Database = ActivatorUtilities.CreateInstance(m_ServiceProvider, dataBaseType) as IEconomyProvider;
-            Console.WriteLine("rise 4 " + (m_Database != null));
             if (!(m_Database is MySqlDatabase mySqlDatabase))
                 return;
 
