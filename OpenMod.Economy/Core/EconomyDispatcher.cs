@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OpenMod.API.Ioc;
@@ -31,16 +32,16 @@ namespace OpenMod.Economy.Core
             m_Disposed = true;
         }
 
-        public void Enqueue(Action action, Action<Exception> exceptionHandler = null)
+        public void Enqueue(Func<Task> task, Action<Exception> exceptionHandler = null)
         {
-            if (action == null)
-                throw new ArgumentNullException(nameof(action));
+            if (task == null)
+                throw new ArgumentNullException(nameof(task));
 
-            s_QueueActions.Enqueue(() =>
+            s_QueueActions.Enqueue(async () =>
             {
                 try
                 {
-                    action();
+                    await task();
                 }
                 catch (Exception ex)
                 {
@@ -72,7 +73,7 @@ namespace OpenMod.Economy.Core
                     //Try catch prevents exception in case of direct insert on ConcurrentQueue instead of Enqueue it
                     try
                     {
-                        action();
+                        action.Invoke();
                     }
                     catch (Exception ex)
                     {

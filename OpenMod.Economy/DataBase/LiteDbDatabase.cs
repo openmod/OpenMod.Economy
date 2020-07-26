@@ -34,6 +34,7 @@ namespace OpenMod.Economy.DataBase
                 var accounts = liteDb.GetCollection<AccountBase>(TableName);
                 var account = accounts.FindById(uniqueId);
                 tcs.SetResult(account?.Balance ?? DefaultBalance);
+                return Task.CompletedTask;
             });
 
             return tcs.Task;
@@ -56,11 +57,11 @@ namespace OpenMod.Economy.DataBase
 
                 account.Balance += amount;
                 if (account.Balance < 0)
-                    throw new NotEnoughBalanceException(StringLocalizer["economy:fail:not_enough_balance",
-                        account.Balance]);
+                    throw new NotEnoughBalanceException(StringLocalizer["economy:fail:not_enough_balance", new { account.Balance, CurrencySymbol }]);
 
                 accounts.Upsert(account);
                 tcs.SetResult(account.Balance);
+                return Task.CompletedTask;
             });
 
             return tcs.Task;
@@ -82,6 +83,7 @@ namespace OpenMod.Economy.DataBase
 
                 account.Balance = balance;
                 accounts.Upsert(account);
+                return Task.CompletedTask;
             });
 
             return tcs.Task;

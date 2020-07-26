@@ -77,7 +77,7 @@ namespace OpenMod.Economy.DataBase
                 if (balance >= 0 || amount >= 0) return balance;
 
                 balance = await UpdateBalanceAsync(ownerId, ownerType, Math.Abs(amount));
-                throw new NotEnoughBalanceException(StringLocalizer["economy:fail:not_enough_balance", balance]);
+                throw new NotEnoughBalanceException(StringLocalizer["economy:fail:not_enough_balance", new { Balance = balance, CurrencySymbol }]);
             }
         }
 
