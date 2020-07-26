@@ -18,12 +18,12 @@ namespace OpenMod.Economy.DataBase
             EconomyPlugin = economyPlugin;
         }
 
-        public string CurrencyName => EconomyPlugin.Instance.Configuration["CurrencyName"];
-        public string CurrencySymbol => EconomyPlugin.Instance.Configuration["CurrencySymbol"];
-
         protected decimal DefaultBalance => decimal.Parse(EconomyPlugin.Instance.Configuration["Default_Balance"]);
         protected IStringLocalizer StringLocalizer => EconomyPlugin.Instance.StringLocalizer;
         protected string TableName => EconomyPlugin.Instance.Configuration["Table_Name"];
+
+        public string CurrencyName => EconomyPlugin.Instance.Configuration["CurrencyName"];
+        public string CurrencySymbol => EconomyPlugin.Instance.Configuration["CurrencySymbol"];
 
         public abstract Task<decimal> GetBalanceAsync(string ownerId, string ownerType);
         public abstract Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount);

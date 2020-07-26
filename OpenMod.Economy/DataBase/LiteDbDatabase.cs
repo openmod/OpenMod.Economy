@@ -21,7 +21,7 @@ namespace OpenMod.Economy.DataBase
             m_EconomyDispatcher = dispatcher;
         }
 
-        private string m_ConnectionString => EconomyPlugin.Instance.Configuration["Connection_String"];
+        private string m_ConnectionString => EconomyPlugin.Instance.Configuration["Connection_String"].Replace("{WorkingDirectory}", EconomyPlugin.Instance.WorkingDirectory);
 
         public override Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
         {

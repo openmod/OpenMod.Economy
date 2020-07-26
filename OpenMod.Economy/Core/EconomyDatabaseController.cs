@@ -33,9 +33,10 @@ namespace OpenMod.Economy.Core
             m_ServiceProvider = serviceProvider;
         }
 
+        private IStringLocalizer m_StringLocalizer => m_EconomyPlugin.Instance.StringLocalizer;
+
         public string CurrencyName => m_Database.CurrencyName;
         public string CurrencySymbol => m_Database.CurrencySymbol;
-        private IStringLocalizer m_StringLocalizer => m_EconomyPlugin.Instance.StringLocalizer;
 
         public async Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
         {
@@ -49,7 +50,8 @@ namespace OpenMod.Economy.Core
         public async Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount)
         {
             if (amount == 0)
-                throw new UserFriendlyException(m_StringLocalizer["economy:fail:invalid_amount", new {amount}]);
+                throw new UserFriendlyException(m_StringLocalizer["economy:fail:invalid_amount",
+                    new {Amount = amount}]);
 
             var balance = await m_Database.UpdateBalanceAsync(ownerId, ownerType, amount);
 

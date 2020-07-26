@@ -1,14 +1,14 @@
 economy:
   fail:
     invalid_amount: "Invalid amount: {Amount}"
-    invalid_default_balance: "Invalid default balance: {balance}"
-    invalid_store_type: "Invalid store type: {storeType} available types: {storeTypes}"
+    invalid_default_balance: "Invalid default balance: {Balance}"
+    invalid_store_type: "Invalid store type: {StoreType} available types: {StoreTypes}"
     self_pay: "You can not pay to yourself."
-    user_not_found: "'{target}' user not found."
+    user_not_found: "'{Target}' user not found."
   success:
-    show_balance: "Your balance: {balance}{CurrencySymbol}."
-    show_balance_other: "{DisplayName}'s balance: {balance}{CurrencySymbol}."
+    show_balance: "Your balance: {Balance}{CurrencySymbol}."
+    show_balance_other: "{DisplayName}'s balance: {Balance}{CurrencySymbol}."
     pay_player: "You payed {Amount} {CurrencyName} to {DisplayName}, your new balance {Balance}{CurrencySymbol}."
     pay_console: "You changed the {DisplayName} balance by {Amount} {CurrencyName}, the new balance is {Balance}{CurrencySymbol}."
-    payed: "You receive a {amount} {CurrencyName} payment from {DisplayName}, your new balance {Balance}{CurrencySymbol}."
-    payed_negative: "Your balance was withdrawn {amount} {CurrencyName} by {DisplayName}, your new balance {Balance}{CurrencySymbol}."
+    payed: "You receive a {Amount} {CurrencyName} payment from {DisplayName}, your new balance {Balance}{CurrencySymbol}."
+    payed_negative: "Your balance was withdrawn {Amount} {CurrencyName} by {DisplayName}, your new balance {Balance}{CurrencySymbol}."

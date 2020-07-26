@@ -41,18 +41,15 @@ namespace OpenMod.Economy.Commands
             var isNegative = amount < 0;
 
             if (isNegative && !isConsole || amount == 0)
-            {
-                throw new UserFriendlyException(m_StringLocalizer["economy:fail:invalid_amount", new {amount}]);
-            }
+                throw new UserFriendlyException(m_StringLocalizer["economy:fail:invalid_amount",
+                    new {Amount = amount}]);
 
             var target = await Context.Parameters.GetAsync<string>(0);
             var targetPlayer =
                 await m_UserManager.FindUserAsync(KnownActorTypes.Player, target, UserSearchMode.NameOrId);
 
             if (targetPlayer == null)
-            {
                 throw new UserFriendlyException(m_StringLocalizer["economy:fail:user_not_found", new {target}]);
-            }
 
             if (targetPlayer.Id.Equals(Context.Actor.Id))
                 throw new UserFriendlyException(m_StringLocalizer["economy:fail:self_pay"]);
@@ -68,15 +65,23 @@ namespace OpenMod.Economy.Commands
             else
                 targetBalance = await m_EconomyProvider.UpdateBalanceAsync(targetPlayer.Id, targetPlayer.Type, amount);
 
-            var printToCaller = contextActorBalance.HasValue
-                ? m_StringLocalizer["economy:success:pay_player",
-                    new {amount, Balance = contextActorBalance.Value, m_EconomyProvider.CurrencyName, m_EconomyProvider.CurrencySymbol, targetPlayer.DisplayName}]
-                : m_StringLocalizer["economy:success:pay_console",
-                    new {amount, Balance = targetBalance, m_EconomyProvider.CurrencyName, m_EconomyProvider.CurrencySymbol, targetPlayer.DisplayName}];
+            var printToCaller = m_StringLocalizer[
+                contextActorBalance.HasValue ? "economy:success:pay_player" : "economy:success:pay_console",
+                new
+                {
+                    Amount = amount, Balance = contextActorBalance ?? targetBalance, m_EconomyProvider.CurrencyName,
+                    m_EconomyProvider.CurrencySymbol, targetPlayer.DisplayName
+                }];
             await PrintAsync(printToCaller);
 
+            amount = Math.Abs(amount);
             var printToTarget = m_StringLocalizer[
-                isNegative ? "economy:success:payed_negative" : "economy:success:payed", new { amount, Balance = targetBalance, m_EconomyProvider.CurrencyName, m_EconomyProvider.CurrencySymbol, Context.Actor.DisplayName }];
+                isNegative ? "economy:success:payed_negative" : "economy:success:payed",
+                new
+                {
+                    Amount = amount, Balance = targetBalance, m_EconomyProvider.CurrencyName,
+                    m_EconomyProvider.CurrencySymbol, Context.Actor.DisplayName
+                }];
             await targetPlayer.PrintMessageAsync(printToTarget);
         }
     }

@@ -67,8 +67,9 @@ namespace OpenMod.Economy.Commands
             var balance = await m_EconomyProvider.GetBalanceAsync(targetData.Id, targetData.Type);
             var message = other
                 ? m_StringLocalizer["economy:success:show_balance_other",
-                    new {balance, m_EconomyProvider.CurrencySymbol, targetData.DisplayName}]
-                : m_StringLocalizer["economy:success:show_balance", new {balance, m_EconomyProvider.CurrencySymbol}];
+                    new {Balance = balance, m_EconomyProvider.CurrencySymbol, targetData.DisplayName}]
+                : m_StringLocalizer["economy:success:show_balance",
+                    new {Balance = balance, m_EconomyProvider.CurrencySymbol}];
 
             await PrintAsync(message);
         }

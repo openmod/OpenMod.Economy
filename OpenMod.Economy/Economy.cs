@@ -26,20 +26,16 @@ namespace OpenMod.Economy
         protected override Task OnLoadAsync()
         {
             if (!Enum.TryParse<StoreType>(Configuration["Store_Type"], true, out _))
-            {
                 throw new UserFriendlyException(StringLocalizer["economy:fail:invalid_store_type",
                     new
                     {
                         storeType = Configuration["Store_Type"],
                         storeTypes = string.Join(", ", Enum.GetNames(typeof(StoreType)))
                     }]);
-            }
 
             if (!decimal.TryParse(Configuration["Default_Balance"], out var defaultBalance) || defaultBalance < 0)
-            {
                 throw new UserFriendlyException(StringLocalizer["economy:fail:invalid_default_balance",
                     new {balance = Configuration["Default_Balance"]}]);
-            }
 
             return Task.CompletedTask;
         }
