@@ -60,7 +60,7 @@ namespace OpenMod.Economy.DataBase
 
                 balance += amount;
                 if (balance < 0)
-                    throw new NotEnoughBalanceException(StringLocalizer["economy:fail:not_enough_balance", new { Balance = balance, CurrencySymbol }]);
+                    throw new NotEnoughBalanceException(StringLocalizer["economy:fail:not_enough_balance", new { Balance = balance - amount, CurrencySymbol }]);
 
                 userData.Data[TableName] = balance;
                 await m_UserDataStore.SaveUserDataAsync(userData);
