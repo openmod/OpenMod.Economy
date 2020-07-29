@@ -17,7 +17,7 @@ using OpenMod.Extensions.Economy.Abstractions;
 
 namespace OpenMod.Economy.Core
 {
-    [ServiceImplementation(Lifetime = ServiceLifetime.Singleton)]
+    [PluginServiceImplementation(Lifetime = ServiceLifetime.Singleton)]
     public sealed class EconomyDatabaseController : IEconomyProvider
     {
         private readonly IPluginAccessor<Economy> m_EconomyPlugin;

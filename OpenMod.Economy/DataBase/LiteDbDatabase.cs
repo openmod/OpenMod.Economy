@@ -55,12 +55,13 @@ namespace OpenMod.Economy.DataBase
                     Balance = DefaultBalance
                 };
 
-                account.Balance += amount;
-                if (account.Balance < 0)
-                    throw new NotEnoughBalanceException(StringLocalizer["economy:fail:not_enough_balance", new { Balance = account.Balance - amount, CurrencySymbol }]);
+                var newBalance = account.Balance + amount;
+                if (newBalance < 0)
+                    throw new NotEnoughBalanceException(StringLocalizer["economy:fail:not_enough_balance", new { account.Balance, CurrencySymbol }], account.Balance);
 
+                account.Balance = newBalance;
                 accounts.Upsert(account);
-                tcs.SetResult(account.Balance);
+                tcs.SetResult(newBalance);
                 return Task.CompletedTask;
             });
 

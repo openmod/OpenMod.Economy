@@ -51,14 +51,14 @@ namespace OpenMod.Economy.DataBase
                            Activator.CreateInstance<AccountsCollection>();
                 if (!data.Accounts.TryGetValue(uniqueId, out var balance)) balance = DefaultBalance;
 
-                balance += amount;
-                if (balance < 0)
-                    throw new NotEnoughBalanceException(StringLocalizer["economy:fail:not_enough_balance", new {Balance = balance - amount, CurrencySymbol }]);
+                var newBalance = balance + amount;
+                if (newBalance < 0)
+                    throw new NotEnoughBalanceException(StringLocalizer["economy:fail:not_enough_balance", new {Balance = balance, CurrencySymbol }], balance);
 
-                data.Accounts[uniqueId] = balance;
+                data.Accounts[uniqueId] = newBalance;
                 await m_DataStore.SaveAsync(TableName, data);
 
-                tcs.SetResult(balance);
+                tcs.SetResult(newBalance);
             }, exception => tcs.SetException(exception));
 
             return tcs.Task;

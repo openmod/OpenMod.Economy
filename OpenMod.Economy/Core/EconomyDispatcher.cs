@@ -16,11 +16,12 @@ namespace OpenMod.Economy.Core
     [ServiceImplementation(Lifetime = ServiceLifetime.Singleton)]
     public sealed class EconomyDispatcher : IEconomyDispatcher, IDisposable
     {
-        private static readonly ConcurrentQueue<Action> s_QueueActions = new ConcurrentQueue<Action>();
-        private static readonly AutoResetEvent s_WaitHandle = new AutoResetEvent(false);
+        private readonly ConcurrentQueue<Action> s_QueueActions = new ConcurrentQueue<Action>();
+        private readonly AutoResetEvent s_WaitHandle = new AutoResetEvent(false);
         private readonly ILogger<Economy> m_Logger;
 
         private bool m_Disposed;
+        private bool m_IsLoaded;
 
         public EconomyDispatcher(ILogger<Economy> logger)
         {
@@ -29,6 +30,7 @@ namespace OpenMod.Economy.Core
 
         public void Dispose()
         {
+            m_IsLoaded = false;
             m_Disposed = true;
         }
 
@@ -60,6 +62,14 @@ namespace OpenMod.Economy.Core
 
         public void LoadDispatcher()
         {
+            lock (this)
+            {
+                if (m_IsLoaded)
+                    return;
+
+                m_IsLoaded = true;
+            }
+
             new Thread(Looper).Start();
         }
 

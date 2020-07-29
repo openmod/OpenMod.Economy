@@ -58,11 +58,11 @@ namespace OpenMod.Economy.DataBase
                 else
                     balance = DefaultBalance;
 
-                balance += amount;
-                if (balance < 0)
-                    throw new NotEnoughBalanceException(StringLocalizer["economy:fail:not_enough_balance", new { Balance = balance - amount, CurrencySymbol }]);
+                var newBalance = balance + amount;
+                if (newBalance < 0)
+                    throw new NotEnoughBalanceException(StringLocalizer["economy:fail:not_enough_balance", new { Balance = balance - amount, CurrencySymbol }], balance);
 
-                userData.Data[TableName] = balance;
+                userData.Data[TableName] = newBalance;
                 await m_UserDataStore.SaveUserDataAsync(userData);
 
                 tcs.SetResult(balance);
