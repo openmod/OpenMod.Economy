@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project>
 	<PropertyGroup>
 		<TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
 	</PropertyGroup>
@@ -11,10 +11,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="LiteDB" Version="5.0.8" />
+		<PackageReference Include="LiteDB" Version="5.0.9" />
 		<PackageReference Include="MySqlConnector" Version="1.0.0" />
-		<PackageReference Include="OpenMod.API" Version="1.1.8" />
-		<PackageReference Include="OpenMod.Core" Version="1.1.8" />
-		<PackageReference Include="OpenMod.Extensions.Economy.Abstractions" Version="1.1.8" />
+		<PackageReference Include="OpenMod.API" Version="1.1.9" />
+		<PackageReference Include="OpenMod.Core" Version="1.1.9" />
+		<PackageReference Include="OpenMod.Extensions.Economy.Abstractions" Version="1.1.9" />
 	</ItemGroup>
 </Project>

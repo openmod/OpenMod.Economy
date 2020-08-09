@@ -1,5 +1,6 @@
 ﻿#region
 
+using System.IO;
 using System.Threading.Tasks;
 using LiteDB;
 using OpenMod.API.Plugins;
@@ -21,7 +22,7 @@ namespace OpenMod.Economy.DataBase
             m_EconomyDispatcher = dispatcher;
         }
 
-        private string m_ConnectionString => EconomyPlugin.Instance.Configuration["Connection_String"].Replace("{WorkingDirectory}", EconomyPlugin.Instance.WorkingDirectory);
+        private string ConnectionString => EconomyPlugin.Instance.Configuration["Connection_String"].Replace("{WorkingDirectory}", EconomyPlugin.Instance.WorkingDirectory);
 
         public override Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
         {
@@ -30,7 +31,7 @@ namespace OpenMod.Economy.DataBase
 
             m_EconomyDispatcher.Enqueue(() =>
             {
-                using var liteDb = new LiteDatabase(m_ConnectionString);
+                using var liteDb = new LiteDatabase(ConnectionString);
                 var accounts = liteDb.GetCollection<AccountBase>(TableName);
                 var account = accounts.FindById(uniqueId);
                 tcs.SetResult(account?.Balance ?? DefaultBalance);
@@ -47,7 +48,7 @@ namespace OpenMod.Economy.DataBase
 
             m_EconomyDispatcher.Enqueue(() =>
             {
-                using var liteDb = new LiteDatabase(m_ConnectionString);
+                using var liteDb = new LiteDatabase(ConnectionString);
                 var accounts = liteDb.GetCollection<AccountBase>(TableName);
                 var account = accounts.FindById(uniqueId) ?? new AccountBase
                 {
@@ -75,7 +76,7 @@ namespace OpenMod.Economy.DataBase
 
             m_EconomyDispatcher.Enqueue(() =>
             {
-                using var liteDb = new LiteDatabase(m_ConnectionString);
+                using var liteDb = new LiteDatabase(ConnectionString);
                 var accounts = liteDb.GetCollection<AccountBase>(TableName);
                 var account = accounts.FindById(uniqueId) ?? new AccountBase
                 {

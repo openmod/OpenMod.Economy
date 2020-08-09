@@ -22,7 +22,7 @@ namespace OpenMod.Economy.DataBase
             m_EconomyDispatcher = dispatcher;
         }
 
-        private IDataStore m_DataStore => EconomyPlugin.Instance.DataStore;
+        private IDataStore DataStore => EconomyPlugin.Instance.DataStore;
 
         public override Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
         {
@@ -31,7 +31,7 @@ namespace OpenMod.Economy.DataBase
 
             m_EconomyDispatcher.Enqueue(async () =>
             {
-                var data = await m_DataStore.LoadAsync<AccountsCollection>(TableName) ??
+                var data = await DataStore.LoadAsync<AccountsCollection>(TableName) ??
                            Activator.CreateInstance<AccountsCollection>();
 
                 tcs.SetResult(data.Accounts.TryGetValue(uniqueId, out var balance) ? balance : DefaultBalance);
@@ -47,7 +47,7 @@ namespace OpenMod.Economy.DataBase
 
             m_EconomyDispatcher.Enqueue(async () =>
             {
-                var data = await m_DataStore.LoadAsync<AccountsCollection>(TableName) ??
+                var data = await DataStore.LoadAsync<AccountsCollection>(TableName) ??
                            Activator.CreateInstance<AccountsCollection>();
                 if (!data.Accounts.TryGetValue(uniqueId, out var balance)) balance = DefaultBalance;
 
@@ -56,7 +56,7 @@ namespace OpenMod.Economy.DataBase
                     throw new NotEnoughBalanceException(StringLocalizer["economy:fail:not_enough_balance", new {Balance = balance, CurrencySymbol }], balance);
 
                 data.Accounts[uniqueId] = newBalance;
-                await m_DataStore.SaveAsync(TableName, data);
+                await DataStore.SaveAsync(TableName, data);
 
                 tcs.SetResult(newBalance);
             }, exception => tcs.SetException(exception));
@@ -71,11 +71,11 @@ namespace OpenMod.Economy.DataBase
 
             m_EconomyDispatcher.Enqueue(async () =>
             {
-                var data = await m_DataStore.LoadAsync<AccountsCollection>(TableName) ??
+                var data = await DataStore.LoadAsync<AccountsCollection>(TableName) ??
                            Activator.CreateInstance<AccountsCollection>();
 
                 data.Accounts[uniqueId] = balance;
-                await m_DataStore.SaveAsync(TableName, data);
+                await DataStore.SaveAsync(TableName, data);
             }, exception => tcs.SetException(exception));
 
             return tcs.Task;

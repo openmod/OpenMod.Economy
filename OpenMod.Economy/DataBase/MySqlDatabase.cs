@@ -16,11 +16,11 @@ namespace OpenMod.Economy.DataBase
         {
         }
 
-        private string m_ConnectionString => EconomyPlugin.Instance.Configuration["Connection_String"];
+        private string ConnectionString => EconomyPlugin.Instance.Configuration["Connection_String"];
 
         public async Task CheckShemasAsync()
         {
-            await using var connection = new MySqlConnection(m_ConnectionString);
+            await using var connection = new MySqlConnection(ConnectionString);
             await using var command = connection.CreateCommand();
 
             command.CommandText = $"SHOW TABLES LIKE '{TableName}';";
@@ -39,7 +39,7 @@ namespace OpenMod.Economy.DataBase
 
         public override async Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
         {
-            await using var connection = new MySqlConnection(m_ConnectionString);
+            await using var connection = new MySqlConnection(ConnectionString);
             await using var command = connection.CreateCommand();
 
             command.Parameters.Add("@ownerid", MySqlDbType.VarChar).Value = ownerId;
@@ -58,7 +58,7 @@ namespace OpenMod.Economy.DataBase
             //Yet i know
             while (true)
             {
-                await using var connection = new MySqlConnection(m_ConnectionString);
+                await using var connection = new MySqlConnection(ConnectionString);
                 await using var command = connection.CreateCommand();
 
                 command.Parameters.Add("@ownerid", MySqlDbType.VarChar).Value = ownerId;
@@ -83,7 +83,7 @@ namespace OpenMod.Economy.DataBase
 
         public override async Task SetBalanceAsync(string ownerId, string ownerType, decimal balance)
         {
-            await using var connection = new MySqlConnection(m_ConnectionString);
+            await using var connection = new MySqlConnection(ConnectionString);
             await using var command = connection.CreateCommand();
 
             if (await CreateAccountIntenalAsync(ownerId, ownerType, balance))
@@ -101,7 +101,7 @@ namespace OpenMod.Economy.DataBase
 
         private async Task<bool> CreateAccountIntenalAsync(string ownerId, string ownerType, decimal balance)
         {
-            await using var connection = new MySqlConnection(m_ConnectionString);
+            await using var connection = new MySqlConnection(ConnectionString);
             await using var command = connection.CreateCommand();
 
             command.Parameters.Add("@ownerid", MySqlDbType.VarChar).Value = ownerId;
