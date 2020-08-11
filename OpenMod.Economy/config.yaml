@@ -1,6 +1,8 @@
-﻿Connection_String: "{WorkingDirectory}/file.db" #This is for LiteDb, Mysql: SERVER=127.0.0.1;PORT=3306;DATABASE=OpenMod;UID=root;PASSWORD=password123;CONNECTION TIMEOUT=30
-CurrencyName: "Cash"
-CurrencySymbol: "$"
-Default_Balance: 300
-Store_Type: DataStore
-Table_Name: economy
+﻿Database:
+  Connection_String: "{WorkingDirectory}/file.db" #This is for LiteDb, Mysql: SERVER=127.0.0.1;PORT=3306;DATABASE=OpenMod;UID=root;PASSWORD=password123;CONNECTION TIMEOUT=30
+  Store_Type: DataStore
+  Table_Name: Economy
+Economy:
+  CurrencyName: Cash
+  CurrencySymbol: $
+  Default_Balance: 300

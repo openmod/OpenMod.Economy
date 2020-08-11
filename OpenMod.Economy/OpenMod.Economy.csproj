@@ -13,8 +13,8 @@
 	<ItemGroup>
 		<PackageReference Include="LiteDB" Version="5.0.9" />
 		<PackageReference Include="MySqlConnector" Version="1.0.0" />
-		<PackageReference Include="OpenMod.API" Version="1.1.9" />
-		<PackageReference Include="OpenMod.Core" Version="1.1.9" />
-		<PackageReference Include="OpenMod.Extensions.Economy.Abstractions" Version="1.1.9" />
+		<PackageReference Include="OpenMod.API" Version="1.2.1" />
+		<PackageReference Include="OpenMod.Core" Version="1.2.1" />
+		<PackageReference Include="OpenMod.Extensions.Economy.Abstractions" Version="1.2.1" />
 	</ItemGroup>
 </Project>

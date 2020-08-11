@@ -5,7 +5,7 @@ using LiteDB;
 
 #endregion
 
-namespace OpenMod.Economy.Core
+namespace OpenMod.Economy.Classes
 {
     public class AccountBase
     {

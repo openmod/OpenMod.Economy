@@ -11,7 +11,7 @@ using OpenMod.Extensions.Economy.Abstractions;
 
 namespace OpenMod.Economy.DataBase
 {
-    internal sealed class UserDataDatabase : DataBaseCore
+    internal sealed class UserDataDatabase : EconomyDatabaseCore
     {
         private readonly IEconomyDispatcher m_EconomyDispatcher;
         private readonly IUserDataStore m_UserDataStore;
@@ -43,7 +43,7 @@ namespace OpenMod.Economy.DataBase
             return tcs.Task;
         }
 
-        public override Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount)
+        public override Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount, string _)
         {
             var tcs = new TaskCompletionSource<decimal>();
 
@@ -60,7 +60,9 @@ namespace OpenMod.Economy.DataBase
 
                 var newBalance = balance + amount;
                 if (newBalance < 0)
-                    throw new NotEnoughBalanceException(StringLocalizer["economy:fail:not_enough_balance", new { Balance = balance - amount, CurrencySymbol }], balance);
+                    throw new NotEnoughBalanceException(
+                        StringLocalizer["economy:fail:not_enough_balance",
+                            new {Balance = balance - amount, CurrencySymbol}], balance);
 
                 userData.Data[TableName] = newBalance;
                 await m_UserDataStore.SaveUserDataAsync(userData);

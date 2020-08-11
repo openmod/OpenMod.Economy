@@ -1,4 +1,6 @@
 economy:
+  default:
+    payment_reason: "Not specified"
   fail:
     invalid_amount: "Invalid amount: {Amount}"
     invalid_default_balance: "Invalid default balance: {Balance}"

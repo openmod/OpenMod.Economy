@@ -1,18 +1,18 @@
 ﻿#region
 
-using System.IO;
 using System.Threading.Tasks;
 using LiteDB;
+using Microsoft.Extensions.Configuration;
 using OpenMod.API.Plugins;
 using OpenMod.Economy.API;
-using OpenMod.Economy.Core;
+using OpenMod.Economy.Classes;
 using OpenMod.Extensions.Economy.Abstractions;
 
 #endregion
 
 namespace OpenMod.Economy.DataBase
 {
-    internal sealed class LiteDbDatabase : DataBaseCore
+    internal sealed class LiteDbDatabase : EconomyDatabaseCore
     {
         private readonly IEconomyDispatcher m_EconomyDispatcher;
 
@@ -22,7 +22,8 @@ namespace OpenMod.Economy.DataBase
             m_EconomyDispatcher = dispatcher;
         }
 
-        private string ConnectionString => EconomyPlugin.Instance.Configuration["Connection_String"].Replace("{WorkingDirectory}", EconomyPlugin.Instance.WorkingDirectory);
+        private string ConnectionString => EconomyPlugin.Instance.Configuration.GetSection("Database:Connection_String")
+            .Get<string>().Replace("{WorkingDirectory}", EconomyPlugin.Instance.WorkingDirectory);
 
         public override Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
         {
@@ -41,7 +42,7 @@ namespace OpenMod.Economy.DataBase
             return tcs.Task;
         }
 
-        public override Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount)
+        public override Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount, string _)
         {
             var uniqueId = $"{ownerType}_{ownerId}";
             var tcs = new TaskCompletionSource<decimal>();
@@ -58,7 +59,9 @@ namespace OpenMod.Economy.DataBase
 
                 var newBalance = account.Balance + amount;
                 if (newBalance < 0)
-                    throw new NotEnoughBalanceException(StringLocalizer["economy:fail:not_enough_balance", new { account.Balance, CurrencySymbol }], account.Balance);
+                    throw new NotEnoughBalanceException(
+                        StringLocalizer["economy:fail:not_enough_balance", new {account.Balance, CurrencySymbol}],
+                        account.Balance);
 
                 account.Balance = newBalance;
                 accounts.Upsert(account);

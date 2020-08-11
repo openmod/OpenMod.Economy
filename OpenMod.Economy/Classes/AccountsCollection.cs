@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 #endregion
 
-namespace OpenMod.Economy.Core
+namespace OpenMod.Economy.Classes
 {
     public class AccountsCollection
     {

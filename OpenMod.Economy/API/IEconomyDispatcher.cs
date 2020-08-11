@@ -12,6 +12,5 @@ namespace OpenMod.Economy.API
     public interface IEconomyDispatcher
     {
         void Enqueue(Func<Task> action, Action<Exception> exceptionHandler = null);
-        void LoadDispatcher();
     }
 }

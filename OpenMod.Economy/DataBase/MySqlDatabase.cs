@@ -2,6 +2,7 @@
 
 using System;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using MySqlConnector;
 using OpenMod.API.Plugins;
 using OpenMod.Extensions.Economy.Abstractions;
@@ -10,13 +11,14 @@ using OpenMod.Extensions.Economy.Abstractions;
 
 namespace OpenMod.Economy.DataBase
 {
-    internal sealed class MySqlDatabase : DataBaseCore
+    internal sealed class MySqlDatabase : EconomyDatabaseCore
     {
         public MySqlDatabase(IPluginAccessor<Economy> economyPlugin) : base(economyPlugin)
         {
         }
 
-        private string ConnectionString => EconomyPlugin.Instance.Configuration["Connection_String"];
+        private string ConnectionString => EconomyPlugin.Instance.Configuration.GetSection("Database:Connection_String")
+            .Get<string>();
 
         public async Task CheckShemasAsync()
         {
@@ -53,7 +55,8 @@ namespace OpenMod.Economy.DataBase
             return DefaultBalance;
         }
 
-        public override async Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount)
+        public override async Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount,
+            string _)
         {
             //Yet i know
             while (true)
@@ -76,8 +79,10 @@ namespace OpenMod.Economy.DataBase
                 var balance = await GetBalanceAsync(ownerId, ownerType);
                 if (balance >= 0 || amount >= 0) return balance;
 
-                balance = await UpdateBalanceAsync(ownerId, ownerType, Math.Abs(amount));
-                throw new NotEnoughBalanceException(StringLocalizer["economy:fail:not_enough_balance", new { Balance = balance, CurrencySymbol }], balance);
+                balance = await UpdateBalanceAsync(ownerId, ownerType, Math.Abs(amount), null);
+                throw new NotEnoughBalanceException(
+                    StringLocalizer["economy:fail:not_enough_balance", new {Balance = balance, CurrencySymbol}],
+                    balance);
             }
         }
 

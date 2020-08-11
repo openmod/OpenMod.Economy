@@ -1,21 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
-	<PropertyGroup>
-		<PackageAuthors>OpenMod;Rube200</PackageAuthors>
-		<PackageId>$(AssemblyName)</PackageId>
-		<PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
-		<PackageOwners>OpenMod;Rube200</PackageOwners>
-		<PackageProjectUrl>https://github.com/rube200/OpenMod.Economy</PackageProjectUrl>
-		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-		<PackageTags>OpenMod Plugin OpenMod.Economy OpenMod-Plugin Economy</PackageTags>
+  <PropertyGroup>
+    <PackageAuthors>OpenMod;Rube200</PackageAuthors>
+    <PackageId>$(AssemblyName)</PackageId>
+    <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
+    <PackageOwners>OpenMod;Rube200</PackageOwners>
+    <PackageProjectUrl>https://github.com/rube200/OpenMod.Economy</PackageProjectUrl>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageTags>OpenMod Plugin OpenMod.Economy OpenMod-Plugin Economy</PackageTags>
 
-		<GenerateNugetPackage>true</GenerateNugetPackage>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GenerateNugetPackage>true</GenerateNugetPackage>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 
-		<AssemblyVersion>1.0.1</AssemblyVersion>
-		<Authors>OpenMod;Rube200</Authors>
-		<Company>OpenMod</Company>
-		<Description>-</Description>
-		<LangVersion>8</LangVersion>
-		<Version>1.0.1</Version>
-	</PropertyGroup>
+    <AssemblyVersion>1.0.1</AssemblyVersion>
+    <Authors>OpenMod;Rube200</Authors>
+    <Company>OpenMod</Company>
+    <Description>-</Description>
+    <LangVersion>8</LangVersion>
+    <Version>1.0.1</Version>
+  </PropertyGroup>
 </Project>

@@ -2,6 +2,7 @@
 
 using System;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Microsoft.Extensions.Localization;
 using OpenMod.API.Commands;
 using OpenMod.API.Permissions;
@@ -20,6 +21,7 @@ namespace OpenMod.Economy.Commands
     [CommandDescription("Shows the player's balance")]
     [CommandSyntax("[player]")]
     [RegisterCommandPermission(OthersPerm, Description = "Permission to see the balance of other players")]
+    [UsedImplicitly]
     public class CommandBalance : Command
     {
         public const string OthersPerm = "others";
@@ -49,7 +51,8 @@ namespace OpenMod.Economy.Commands
             {
                 var otherPermission = await CheckPermissionAsync(OthersPerm) == PermissionGrantResult.Grant;
                 var target = await Context.Parameters.GetAsync<string>(0);
-                targetData = await m_UserManager.FindUserAsync(KnownActorTypes.Player, target, UserSearchMode.NameOrId);
+                targetData =
+                    await m_UserManager.FindUserAsync(KnownActorTypes.Player, target, UserSearchMode.FindByNameOrId);
 
                 if (otherPermission)
                 {
@@ -62,7 +65,8 @@ namespace OpenMod.Economy.Commands
             }
 
             if (!other)
-                targetData = await m_UserManager.FindUserAsync(Context.Actor.Type, Context.Actor.Id, UserSearchMode.Id);
+                targetData =
+                    await m_UserManager.FindUserAsync(Context.Actor.Type, Context.Actor.Id, UserSearchMode.FindById);
 
             var balance = await m_EconomyProvider.GetBalanceAsync(targetData.Id, targetData.Type);
             var message = other

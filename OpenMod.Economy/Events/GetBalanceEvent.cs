@@ -17,7 +17,6 @@ namespace OpenMod.Economy.Events
 
         public string OwnerId { get; }
         public string OwnerType { get; }
-
         public decimal Balance { get; }
     }
 }

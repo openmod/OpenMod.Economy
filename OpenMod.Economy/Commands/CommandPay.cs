@@ -2,6 +2,7 @@
 
 using System;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Microsoft.Extensions.Localization;
 using OpenMod.API.Commands;
 using OpenMod.API.Prioritization;
@@ -16,7 +17,8 @@ namespace OpenMod.Economy.Commands
 {
     [Command("pay", Priority = Priority.Normal)]
     [CommandDescription("Pay to a user")]
-    [CommandSyntax("<player> <amount>")]
+    [CommandSyntax("<player> <amount> [reason]")]
+    [UsedImplicitly]
     public class CommandPay : Command
     {
         private readonly IEconomyProvider m_EconomyProvider;
@@ -30,7 +32,6 @@ namespace OpenMod.Economy.Commands
             m_StringLocalizer = stringLocalizer;
             m_UserManager = userManager;
         }
-
 
         protected override async Task OnExecuteAsync()
         {
@@ -46,7 +47,7 @@ namespace OpenMod.Economy.Commands
 
             var target = await Context.Parameters.GetAsync<string>(0);
             var targetPlayer =
-                await m_UserManager.FindUserAsync(KnownActorTypes.Player, target, UserSearchMode.NameOrId);
+                await m_UserManager.FindUserAsync(KnownActorTypes.Player, target, UserSearchMode.FindByNameOrId);
 
             if (targetPlayer == null)
                 throw new UserFriendlyException(m_StringLocalizer["economy:fail:user_not_found", new {target}]);
@@ -54,12 +55,17 @@ namespace OpenMod.Economy.Commands
             if (targetPlayer.Id.Equals(Context.Actor.Id))
                 throw new UserFriendlyException(m_StringLocalizer["economy:fail:self_pay"]);
 
+            var reason = (string) m_StringLocalizer["economy:default:payment_reason"];
+            if (Context.Parameters.Length > 2)
+                reason = Context.Parameters.GetArgumentLine(2);
+
             var contextActorBalance = (decimal?) null;
             if (!isConsole)
                 contextActorBalance =
-                    await m_EconomyProvider.UpdateBalanceAsync(Context.Actor.Id, Context.Actor.Type, -amount);
+                    await m_EconomyProvider.UpdateBalanceAsync(Context.Actor.Id, Context.Actor.Type, -amount, reason);
 
-            var targetBalance = await m_EconomyProvider.UpdateBalanceAsync(targetPlayer.Id, targetPlayer.Type, amount);
+            var targetBalance =
+                await m_EconomyProvider.UpdateBalanceAsync(targetPlayer.Id, targetPlayer.Type, amount, reason);
             var printToCaller = m_StringLocalizer[
                 contextActorBalance.HasValue ? "economy:success:pay_player" : "economy:success:pay_console",
                 new

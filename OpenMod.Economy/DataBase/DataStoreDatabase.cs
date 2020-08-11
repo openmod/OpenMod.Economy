@@ -5,14 +5,14 @@ using System.Threading.Tasks;
 using OpenMod.API.Persistence;
 using OpenMod.API.Plugins;
 using OpenMod.Economy.API;
-using OpenMod.Economy.Core;
+using OpenMod.Economy.Classes;
 using OpenMod.Extensions.Economy.Abstractions;
 
 #endregion
 
 namespace OpenMod.Economy.DataBase
 {
-    internal sealed class DataStoreDatabase : DataBaseCore
+    internal sealed class DataStoreDatabase : EconomyDatabaseCore
     {
         private readonly IEconomyDispatcher m_EconomyDispatcher;
 
@@ -40,7 +40,7 @@ namespace OpenMod.Economy.DataBase
             return tcs.Task;
         }
 
-        public override Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount)
+        public override Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount, string _)
         {
             var uniqueId = $"{ownerType}_{ownerId}";
             var tcs = new TaskCompletionSource<decimal>();
@@ -53,7 +53,9 @@ namespace OpenMod.Economy.DataBase
 
                 var newBalance = balance + amount;
                 if (newBalance < 0)
-                    throw new NotEnoughBalanceException(StringLocalizer["economy:fail:not_enough_balance", new {Balance = balance, CurrencySymbol }], balance);
+                    throw new NotEnoughBalanceException(
+                        StringLocalizer["economy:fail:not_enough_balance", new {Balance = balance, CurrencySymbol}],
+                        balance);
 
                 data.Accounts[uniqueId] = newBalance;
                 await DataStore.SaveAsync(TableName, data);

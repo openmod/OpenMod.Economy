@@ -4,6 +4,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OpenMod.API.Ioc;
@@ -11,14 +12,15 @@ using OpenMod.Economy.API;
 
 #endregion
 
-namespace OpenMod.Economy.Core
+namespace OpenMod.Economy.Dispatcher
 {
     [ServiceImplementation(Lifetime = ServiceLifetime.Singleton)]
+    [UsedImplicitly]
     public sealed class EconomyDispatcher : IEconomyDispatcher, IDisposable
     {
-        private readonly ConcurrentQueue<Action> s_QueueActions = new ConcurrentQueue<Action>();
-        private readonly AutoResetEvent s_WaitHandle = new AutoResetEvent(false);
         private readonly ILogger<Economy> m_Logger;
+        private readonly ConcurrentQueue<Action> m_QueueActions = new ConcurrentQueue<Action>();
+        private readonly AutoResetEvent m_WaitHandle = new AutoResetEvent(false);
 
         private bool m_Disposed;
         private bool m_IsLoaded;
@@ -39,7 +41,8 @@ namespace OpenMod.Economy.Core
             if (task == null)
                 throw new ArgumentNullException(nameof(task));
 
-            s_QueueActions.Enqueue(async () =>
+            LoadDispatcher();
+            m_QueueActions.Enqueue(async () =>
             {
                 try
                 {
@@ -48,19 +51,15 @@ namespace OpenMod.Economy.Core
                 catch (Exception ex)
                 {
                     if (exceptionHandler != null)
-                    {
                         exceptionHandler(ex);
-                    }
                     else
-                    {
                         m_Logger.LogError(ex, "Exception while dispatching a task");
-                    }
                 }
             });
-            s_WaitHandle.Set();
+            m_WaitHandle.Set();
         }
 
-        public void LoadDispatcher()
+        private void LoadDispatcher()
         {
             lock (this)
             {
@@ -77,9 +76,8 @@ namespace OpenMod.Economy.Core
         {
             while (!m_Disposed)
             {
-                s_WaitHandle.WaitOne();
-                while (s_QueueActions.TryDequeue(out var action))
-                {
+                m_WaitHandle.WaitOne();
+                while (m_QueueActions.TryDequeue(out var action))
                     //Try catch prevents exception in case of direct insert on ConcurrentQueue instead of Enqueue it
                     try
                     {
@@ -89,7 +87,6 @@ namespace OpenMod.Economy.Core
                     {
                         m_Logger.LogError(ex, "Exception while dispatching a task");
                     }
-                }
             }
         }
     }
