@@ -5,9 +5,11 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Localization;
 using OpenMod.API.Commands;
+using OpenMod.API.Permissions;
 using OpenMod.API.Prioritization;
 using OpenMod.API.Users;
 using OpenMod.Core.Commands;
+using OpenMod.Core.Permissions;
 using OpenMod.Core.Users;
 using OpenMod.Extensions.Economy.Abstractions;
 
@@ -18,9 +20,12 @@ namespace OpenMod.Economy.Commands
     [Command("pay", Priority = Priority.Normal)]
     [CommandDescription("Pay to a user")]
     [CommandSyntax("<player> <amount> [reason]")]
+    [RegisterCommandPermission(PayToSelf, Description = "Permission to increase/decrease the own balance")]
     [UsedImplicitly]
     public class CommandPay : Command
     {
+        public const string PayToSelf = "self";
+
         private readonly IEconomyProvider m_EconomyProvider;
         private readonly IStringLocalizer m_StringLocalizer;
         private readonly IUserManager m_UserManager;
@@ -41,19 +46,24 @@ namespace OpenMod.Economy.Commands
             var isConsole = Context.Actor.Type == KnownActorTypes.Console;
             var isNegative = amount < 0;
 
-            if (isNegative && !isConsole || amount == 0)
-                throw new UserFriendlyException(m_StringLocalizer["economy:fail:invalid_amount",
-                    new {Amount = amount}]);
-
             var target = await Context.Parameters.GetAsync<string>(0);
             var targetPlayer =
                 await m_UserManager.FindUserAsync(KnownActorTypes.Player, target, UserSearchMode.FindByNameOrId);
 
             if (targetPlayer == null)
-                throw new UserFriendlyException(m_StringLocalizer["economy:fail:user_not_found", new {target}]);
+                throw new UserFriendlyException(m_StringLocalizer["economy:fail:user_not_found", new { target }]);
 
+            var selfPermission = false;
             if (targetPlayer.Id.Equals(Context.Actor.Id))
-                throw new UserFriendlyException(m_StringLocalizer["economy:fail:self_pay"]);
+            {
+                selfPermission = await CheckPermissionAsync(PayToSelf) == PermissionGrantResult.Grant;
+                if (selfPermission)
+                    throw new UserFriendlyException(m_StringLocalizer["economy:fail:self_pay"]);
+            }
+            
+            if (isNegative && !selfPermission && !isConsole || amount == 0)
+                throw new UserFriendlyException(m_StringLocalizer["economy:fail:invalid_amount",
+                    new {Amount = amount}]);
 
             var reason = (string) m_StringLocalizer["economy:default:payment_reason"];
             if (Context.Parameters.Length > 2)
