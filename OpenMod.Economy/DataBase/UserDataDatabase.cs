@@ -1,6 +1,5 @@
 ﻿#region
 
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using OpenMod.API.Plugins;
 using OpenMod.API.Users;
@@ -30,14 +29,7 @@ namespace OpenMod.Economy.Database
 
             m_EconomyDispatcher.Enqueue(async () =>
             {
-                var userData = await m_UserDataStore.GetUserDataAsync(ownerId, ownerType);
-                userData.Data ??= new Dictionary<string, object>();
-
-                var balance = DefaultBalance;
-                if (userData.Data.TryGetValue(TableName, out var balanceObj))
-                    balance = (decimal) balanceObj;
-
-                tcs.SetResult(balance);
+                tcs.SetResult(await m_UserDataStore.GetUserDataAsync<decimal?>(ownerId, ownerType, TableName) ?? DefaultBalance);
             });
 
             return tcs.Task;
@@ -49,14 +41,7 @@ namespace OpenMod.Economy.Database
 
             m_EconomyDispatcher.Enqueue(async () =>
             {
-                var userData = await m_UserDataStore.GetUserDataAsync(ownerId, ownerType);
-                userData.Data ??= new Dictionary<string, object>();
-
-                decimal balance;
-                if (userData.Data.TryGetValue(TableName, out var balanceObj))
-                    balance = (decimal) balanceObj;
-                else
-                    balance = DefaultBalance;
+                var balance = await m_UserDataStore.GetUserDataAsync<decimal?>(ownerId, ownerType, TableName) ?? DefaultBalance;
 
                 var newBalance = balance + amount;
                 if (newBalance < 0)
@@ -64,8 +49,7 @@ namespace OpenMod.Economy.Database
                         StringLocalizer["economy:fail:not_enough_balance",
                             new {Balance = balance - amount, CurrencySymbol}], balance);
 
-                userData.Data[TableName] = newBalance;
-                await m_UserDataStore.SaveUserDataAsync(userData);
+                await m_UserDataStore.SetUserDataAsync(ownerId, ownerType, TableName, balance);
 
                 tcs.SetResult(balance);
             });
@@ -76,16 +60,7 @@ namespace OpenMod.Economy.Database
         public override Task SetBalanceAsync(string ownerId, string ownerType, decimal balance)
         {
             var tcs = new TaskCompletionSource<decimal>();
-
-            m_EconomyDispatcher.Enqueue(async () =>
-            {
-                var userData = await m_UserDataStore.GetUserDataAsync(ownerId, ownerType);
-                userData.Data ??= new Dictionary<string, object>();
-
-                userData.Data[TableName] = balance;
-                await m_UserDataStore.SaveUserDataAsync(userData);
-            });
-
+            m_EconomyDispatcher.Enqueue(() => m_UserDataStore.SetUserDataAsync(ownerId, ownerType, TableName, balance));
             return tcs.Task;
         }
     }
