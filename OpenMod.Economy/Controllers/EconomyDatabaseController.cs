@@ -9,7 +9,7 @@ using OpenMod.API.Eventing;
 using OpenMod.API.Ioc;
 using OpenMod.API.Plugins;
 using OpenMod.Economy.API;
-using OpenMod.Economy.DataBase;
+using OpenMod.Economy.Database;
 using OpenMod.Economy.Events;
 using OpenMod.Extensions.Economy.Abstractions;
 

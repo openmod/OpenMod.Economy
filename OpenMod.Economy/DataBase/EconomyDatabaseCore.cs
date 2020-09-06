@@ -8,7 +8,7 @@ using OpenMod.Extensions.Economy.Abstractions;
 
 #endregion
 
-namespace OpenMod.Economy.DataBase
+namespace OpenMod.Economy.Database
 {
     internal abstract class EconomyDatabaseCore : IEconomyProvider
     {
