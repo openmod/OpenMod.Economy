@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageAuthors>OpenMod;Rube200</PackageAuthors>
     <PackageId>$(AssemblyName)</PackageId>
-    <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
+    <PackageLicenseExpression>EUPL-1.2</PackageLicenseExpression>
     <PackageOwners>OpenMod;Rube200</PackageOwners>
     <PackageProjectUrl>https://github.com/rube200/OpenMod.Economy</PackageProjectUrl>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
@@ -13,8 +13,7 @@
 
     <Authors>OpenMod;Rube200</Authors>
     <Company>OpenMod</Company>
-    <Description>-</Description>
+    <Description>Economy plugin for OpenMod</Description>
     <LangVersion>8</LangVersion>
-    <Version>1.0.3</Version>
   </PropertyGroup>
 </Project>
