@@ -51,7 +51,7 @@ namespace OpenMod.Economy.Commands
                 await m_UserManager.FindUserAsync(KnownActorTypes.Player, target, UserSearchMode.FindByNameOrId);
 
             if (targetPlayer == null)
-                throw new UserFriendlyException(m_StringLocalizer["economy:fail:user_not_found", new { target }]);
+                throw new UserFriendlyException(m_StringLocalizer["economy:fail:user_not_found", new { Target = target }]);
 
             var selfPermission = false;
             if (targetPlayer.Id.Equals(Context.Actor.Id))
@@ -80,8 +80,11 @@ namespace OpenMod.Economy.Commands
                 contextActorBalance.HasValue ? "economy:success:pay_player" : "economy:success:pay_console",
                 new
                 {
-                    Amount = amount, Balance = contextActorBalance ?? targetBalance, m_EconomyProvider.CurrencyName,
-                    m_EconomyProvider.CurrencySymbol, targetPlayer.DisplayName
+                    Amount = amount, 
+                    Balance = contextActorBalance ?? targetBalance, 
+                    m_EconomyProvider.CurrencyName,
+                    m_EconomyProvider.CurrencySymbol, 
+                    targetPlayer.DisplayName
                 }];
             await PrintAsync(printToCaller);
 
@@ -90,8 +93,11 @@ namespace OpenMod.Economy.Commands
                 isNegative ? "economy:success:payed_negative" : "economy:success:payed",
                 new
                 {
-                    Amount = amount, Balance = targetBalance, m_EconomyProvider.CurrencyName,
-                    m_EconomyProvider.CurrencySymbol, Context.Actor.DisplayName
+                    Amount = amount, 
+                    Balance = targetBalance, 
+                    m_EconomyProvider.CurrencyName,
+                    m_EconomyProvider.CurrencySymbol, 
+                    Context.Actor.DisplayName
                 }];
             await targetPlayer.PrintMessageAsync(printToTarget);
         }

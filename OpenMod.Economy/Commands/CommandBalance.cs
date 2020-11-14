@@ -57,7 +57,7 @@ namespace OpenMod.Economy.Commands
                 if (otherPermission)
                 {
                     if (targetData == null)
-                        throw new UserFriendlyException(m_StringLocalizer["economy:fail:user_not_found", new {target}]);
+                        throw new UserFriendlyException(m_StringLocalizer["economy:fail:user_not_found", new { Target = target }]);
 
                     if (!Context.Actor.Id.Equals(targetData.Id, StringComparison.OrdinalIgnoreCase))
                         other = true;
