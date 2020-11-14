@@ -17,9 +17,9 @@
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="MySqlConnector" Version="1.0.1" />
-		<PackageReference Include="OpenMod.API" Version="2.2.0" />
-		<PackageReference Include="OpenMod.Core" Version="2.2.0" />
-		<PackageReference Include="OpenMod.Extensions.Economy.Abstractions" Version="2.2.0" />
+		<PackageReference Include="MySqlConnector" Version="1.1.0" />
+		<PackageReference Include="OpenMod.API" Version="2.3.7" />
+		<PackageReference Include="OpenMod.Core" Version="2.3.7" />
+		<PackageReference Include="OpenMod.Extensions.Economy.Abstractions" Version="2.3.7" />
 	</ItemGroup>
 </Project>
