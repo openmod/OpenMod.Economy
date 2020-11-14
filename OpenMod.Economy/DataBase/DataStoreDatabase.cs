@@ -31,8 +31,11 @@ namespace OpenMod.Economy.Database
 
             m_EconomyDispatcher.Enqueue(async () =>
             {
-                var data = await DataStore.LoadAsync<AccountsCollection>(TableName) ??
-                           Activator.CreateInstance<AccountsCollection>();
+                AccountsCollection data;
+                if (await DataStore.ExistsAsync(TableName))
+                    data = await DataStore.LoadAsync<AccountsCollection>(TableName);
+                else
+                    data = Activator.CreateInstance<AccountsCollection>();
 
                 tcs.SetResult(data.Accounts.TryGetValue(uniqueId, out var balance) ? balance : DefaultBalance);
             }, exception => tcs.SetException(exception));
@@ -47,8 +50,12 @@ namespace OpenMod.Economy.Database
 
             m_EconomyDispatcher.Enqueue(async () =>
             {
-                var data = await DataStore.LoadAsync<AccountsCollection>(TableName) ??
-                           Activator.CreateInstance<AccountsCollection>();
+                AccountsCollection data;
+                if (await DataStore.ExistsAsync(TableName))
+                    data = await DataStore.LoadAsync<AccountsCollection>(TableName);
+                else
+                    data = Activator.CreateInstance<AccountsCollection>();
+
                 if (!data.Accounts.TryGetValue(uniqueId, out var balance)) balance = DefaultBalance;
 
                 var newBalance = balance + amount;
@@ -73,8 +80,11 @@ namespace OpenMod.Economy.Database
 
             m_EconomyDispatcher.Enqueue(async () =>
             {
-                var data = await DataStore.LoadAsync<AccountsCollection>(TableName) ??
-                           Activator.CreateInstance<AccountsCollection>();
+                AccountsCollection data;
+                if (await DataStore.ExistsAsync(TableName))
+                    data = await DataStore.LoadAsync<AccountsCollection>(TableName);
+                else
+                    data = Activator.CreateInstance<AccountsCollection>();
 
                 data.Accounts[uniqueId] = balance;
                 await DataStore.SaveAsync(TableName, data);
