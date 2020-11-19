@@ -18,6 +18,7 @@ using OpenMod.Extensions.Economy.Abstractions;
 namespace OpenMod.Economy.Commands
 {
     [Command("balance", Priority = Priority.Normal)]
+    [CommandAlias("bal")]
     [CommandDescription("Shows the player's balance")]
     [CommandSyntax("[player]")]
     [RegisterCommandPermission(OthersPerm, Description = "Permission to see the balance of other players")]
