@@ -4,6 +4,7 @@ using System;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
+using Nito.AsyncEx;
 using OpenMod.API.Commands;
 using OpenMod.API.Eventing;
 using OpenMod.API.Ioc;
@@ -17,7 +18,7 @@ using OpenMod.Extensions.Economy.Abstractions;
 
 namespace OpenMod.Economy.Controllers
 {
-    [PluginServiceImplementation(Lifetime = ServiceLifetime.Singleton)]
+    [PluginServiceImplementation]
     [UsedImplicitly]
     public sealed class EconomyDatabaseController : DatabaseController, IEconomyProvider
     {
@@ -30,10 +31,14 @@ namespace OpenMod.Economy.Controllers
         {
             m_EventBus = eventBus;
             m_ServiceProvider = serviceProvider;
+            AsyncContext.Run(async () => await LoadControllerBaseAsync());
         }
 
         protected override Task LoadControllerAsync()
         {
+            if (IsServiceLoaded)
+                return Task.CompletedTask;
+
             var dataBaseType = DbStoreType switch
             {
                 StoreType.DataStore => typeof(DataStoreDatabase),
@@ -57,9 +62,6 @@ namespace OpenMod.Economy.Controllers
 
         public async Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
         {
-            if (!IsServiceLoaded)
-                await LoadControllerBaseAsync();
-
             var balance = await m_Database.GetBalanceAsync(ownerId, ownerType);
 
             var getBalanceEvent = new GetBalanceEvent(ownerId, ownerType, balance);
@@ -74,9 +76,6 @@ namespace OpenMod.Economy.Controllers
                 throw new UserFriendlyException(StringLocalizer["economy:fail:invalid_amount",
                     new {Amount = amount}]);
 
-            if (!IsServiceLoaded)
-                await LoadControllerBaseAsync();
-
             var oldBalance = await m_Database.GetBalanceAsync(ownerId, ownerType);
             var balance = await m_Database.UpdateBalanceAsync(ownerId, ownerType, amount, reason);
 
@@ -88,9 +87,6 @@ namespace OpenMod.Economy.Controllers
 
         public async Task SetBalanceAsync(string ownerId, string ownerType, decimal newBalance)
         {
-            if (!IsServiceLoaded)
-                await LoadControllerBaseAsync();
-
             var oldBalance = await m_Database.GetBalanceAsync(ownerId, ownerType);
             await m_Database.SetBalanceAsync(ownerId, ownerType, newBalance);
 
