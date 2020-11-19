@@ -11,7 +11,7 @@ using OpenMod.Economy.API;
 
 namespace OpenMod.Economy.Controllers
 {
-    ///To use this class service must be ServiceLifetime.Singleton
+    ///Do not forget to call 'LoadControllerBaseAsync'
     public abstract class DatabaseController
     {
         protected readonly IPluginAccessor<Economy> EconomyPlugin;
