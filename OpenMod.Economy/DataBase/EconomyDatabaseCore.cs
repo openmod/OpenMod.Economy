@@ -25,7 +25,7 @@ namespace OpenMod.Economy.Database
             EconomyPlugin.Instance.Configuration.GetSection("Database:Table_Name").Get<string>();
 
         protected decimal DefaultBalance =>
-            EconomyPlugin.Instance.Configuration.GetSection("Default_Balance").Get<decimal>();
+            EconomyPlugin.Instance.Configuration.GetSection("Economy:Default_Balance").Get<decimal>();
 
         public string CurrencyName =>
             EconomyPlugin.Instance.Configuration.GetSection("Economy:CurrencyName").Get<string>();
