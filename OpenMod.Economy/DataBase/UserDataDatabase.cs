@@ -29,7 +29,8 @@ namespace OpenMod.Economy.Database
 
             m_EconomyDispatcher.Enqueue(async () =>
             {
-                tcs.SetResult(await m_UserDataStore.GetUserDataAsync<decimal?>(ownerId, ownerType, TableName) ?? DefaultBalance);
+                tcs.SetResult(await m_UserDataStore.GetUserDataAsync<decimal?>(ownerId, ownerType, TableName) ??
+                              DefaultBalance);
             });
 
             return tcs.Task;
@@ -41,7 +42,8 @@ namespace OpenMod.Economy.Database
 
             m_EconomyDispatcher.Enqueue(async () =>
             {
-                var balance = await m_UserDataStore.GetUserDataAsync<decimal?>(ownerId, ownerType, TableName) ?? DefaultBalance;
+                var balance = await m_UserDataStore.GetUserDataAsync<decimal?>(ownerId, ownerType, TableName) ??
+                              DefaultBalance;
 
                 var newBalance = balance + amount;
                 if (newBalance < 0)

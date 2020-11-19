@@ -7,7 +7,9 @@ using OpenMod.Core.Plugins;
 
 #endregion
 
-[assembly: PluginMetadata("Openmod.Economy", Author = "OpenMod,Rube200", DisplayName = "Openmod.Economy", Website = "https://github.com/openmodplugins/OpenMod.Economy")]
+[assembly:
+    PluginMetadata("Openmod.Economy", Author = "OpenMod,Rube200", DisplayName = "Openmod.Economy",
+        Website = "https://github.com/openmodplugins/OpenMod.Economy")]
 
 namespace OpenMod.Economy
 {
