@@ -4,7 +4,7 @@
     <PackageId>$(AssemblyName)</PackageId>
     <PackageLicenseExpression>EUPL-1.2</PackageLicenseExpression>
     <PackageOwners>OpenMod;Rube200</PackageOwners>
-    <PackageProjectUrl>https://github.com/rube200/OpenMod.Economy</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/openmod/OpenMod.Economy</PackageProjectUrl>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageTags>OpenMod Plugin OpenMod.Economy OpenMod-Plugin Economy</PackageTags>
 
