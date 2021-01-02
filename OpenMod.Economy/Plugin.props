@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <PackageAuthors>OpenMod;Rube200</PackageAuthors>
     <PackageId>$(AssemblyName)</PackageId>
     <PackageLicenseExpression>EUPL-1.2</PackageLicenseExpression>
@@ -14,6 +15,14 @@
     <Authors>OpenMod;Rube200</Authors>
     <Company>OpenMod</Company>
     <Description>Economy plugin for OpenMod</Description>
-    <LangVersion>8</LangVersion>
+    <LangVersion>9</LangVersion>
+    <Configurations>Debug;Release;GitHub</Configurations>
   </PropertyGroup>
+
+  <Target Name="CreateZip" AfterTargets="PostBuildEvent" Condition="$(ConfigurationName)=='GitHub'">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="../Releases/$(ProjectName)" />
+    <!-- ReSharper disable once UnknownTask -->
+    <ZipDirectory DestinationFile="../Releases/$(ProjectName).zip" Overwrite="true"
+                  SourceDirectory="../Releases/$(ProjectName)" />
+  </Target>
 </Project>
