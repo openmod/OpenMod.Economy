@@ -1,0 +1,53 @@
+name: Github Release and Nuget Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Plugin SemVer:'
+        required: true
+      update_notes:
+        default: "-"
+        description: "Update Notes to Release"
+        required: true
+jobs:
+  release_deploy:
+    name: "OpenMod Economy Release/Deployment"
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+      name: Checkout Repository
+      with:
+        fetch-depth: 0
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@master
+      with:
+        dotnet-version: 5.0.100
+    - name: Restore dependencies
+      run: dotnet restore OpenMod.Economy
+    - name: Update version
+      run: "sed -i \"s#<Version>[0-9]+.[0-9]+.[0-9]+</Version>#<Version>${{ github.event.inputs.version }}</Version>#\" OpenMod.Economy/OpenMod.Economy.csproj"  
+    - name: Build
+      run: dotnet build OpenMod.Economy --configuration GitHub --no-restore
+    - name: Push to NuGet
+      run: dotnet nuget push OpenMod.Economy/bin/Release/*.nupkg
+             --api-key ${{ secrets.NUGET_DEPLOY_KEY }}
+             --source https://api.nuget.org/v3/index.json
+    - name: Release
+      id: create_release
+      uses: actions/create-release@master
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        body: ${{ github.event.inputs.update_notes }}
+        release_name: OpenMod.Economy V${{ github.event.inputs.version }}
+        tag_name: V${{ github.event.inputs.version }}
+    - name: Upload Release to GitHub
+      uses: actions/upload-release-asset@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        asset_content_type: application/zip
+        asset_name: OpenMod.Economy.zip
+        asset_path: OpenMod.Economy.zip
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
