@@ -24,6 +24,7 @@ namespace OpenMod.Economy.Database
         {
             await using var connection = new MySqlConnection(ConnectionString);
             await using var command = connection.CreateCommand();
+            await connection.OpenAsync();
 
             command.CommandText = $"SHOW TABLES LIKE '{TableName}';";
             if (await command.ExecuteScalarAsync() != null)
@@ -43,6 +44,7 @@ namespace OpenMod.Economy.Database
         {
             await using var connection = new MySqlConnection(ConnectionString);
             await using var command = connection.CreateCommand();
+            await connection.OpenAsync();
 
             command.Parameters.Add("@ownerid", MySqlDbType.VarChar).Value = ownerId;
             command.Parameters.Add("@ownertype", MySqlDbType.VarChar).Value = ownerType;
@@ -58,15 +60,17 @@ namespace OpenMod.Economy.Database
         public override async Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount,
             string _)
         {
+            await using var connection = new MySqlConnection(ConnectionString);
+            await using var command = connection.CreateCommand();
+            await connection.OpenAsync();
+
+            command.Parameters.Add("@ownerid", MySqlDbType.VarChar).Value = ownerId;
+            command.Parameters.Add("@ownertype", MySqlDbType.VarChar).Value = ownerType;
+            command.Parameters.Add("@amount", MySqlDbType.Decimal).Value = amount;
+
             //Yet i know
             while (true)
             {
-                await using var connection = new MySqlConnection(ConnectionString);
-                await using var command = connection.CreateCommand();
-
-                command.Parameters.Add("@ownerid", MySqlDbType.VarChar).Value = ownerId;
-                command.Parameters.Add("@ownertype", MySqlDbType.VarChar).Value = ownerType;
-                command.Parameters.Add("@amount", MySqlDbType.Decimal).Value = amount;
                 command.CommandText = $"UPDATE `{TableName}` " + "SET `Balance` = `Balance` + @amount " +
                                       "WHERE `Id` = @ownerid AND `Type` = @ownertype;";
 
@@ -75,7 +79,7 @@ namespace OpenMod.Economy.Database
                     await CreateAccountIntenalAsync(ownerId, ownerType, DefaultBalance);
                     continue;
                 }
-
+                
                 var balance = await GetBalanceAsync(ownerId, ownerType);
                 if (balance >= 0 || amount >= 0) return balance;
 
@@ -90,6 +94,7 @@ namespace OpenMod.Economy.Database
         {
             await using var connection = new MySqlConnection(ConnectionString);
             await using var command = connection.CreateCommand();
+            await connection.OpenAsync();
 
             if (await CreateAccountIntenalAsync(ownerId, ownerType, balance))
                 return;
@@ -108,6 +113,7 @@ namespace OpenMod.Economy.Database
         {
             await using var connection = new MySqlConnection(ConnectionString);
             await using var command = connection.CreateCommand();
+            await connection.OpenAsync();
 
             command.Parameters.Add("@ownerid", MySqlDbType.VarChar).Value = ownerId;
             command.Parameters.Add("@ownertype", MySqlDbType.VarChar).Value = ownerType;
