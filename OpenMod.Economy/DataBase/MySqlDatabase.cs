@@ -79,7 +79,7 @@ namespace OpenMod.Economy.Database
                     await CreateAccountIntenalAsync(ownerId, ownerType, DefaultBalance);
                     continue;
                 }
-                
+
                 var balance = await GetBalanceAsync(ownerId, ownerType);
                 if (balance >= 0 || amount >= 0) return balance;
 
