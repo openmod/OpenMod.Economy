@@ -19,8 +19,8 @@ namespace OpenMod.Economy.Dispatcher
     public sealed class EconomyDispatcher : IEconomyDispatcher, IDisposable
     {
         private readonly ILogger<Economy> m_Logger;
-        private readonly ConcurrentQueue<Action> m_QueueActions = new ConcurrentQueue<Action>();
-        private readonly AutoResetEvent m_WaitHandle = new AutoResetEvent(false);
+        private readonly ConcurrentQueue<Action> m_QueueActions = new();
+        private readonly AutoResetEvent m_WaitHandle = new(false);
 
         private bool m_Disposed;
         private bool m_IsLoaded;

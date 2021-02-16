@@ -8,6 +8,6 @@ namespace OpenMod.Economy.Classes
 {
     public class AccountsCollection
     {
-        public Dictionary<string, decimal> Accounts = new Dictionary<string, decimal>();
+        public Dictionary<string, decimal> Accounts = new();
     }
 }
