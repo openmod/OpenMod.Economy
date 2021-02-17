@@ -42,21 +42,3 @@ jobs:
         body: ${{ github.event.inputs.update_notes }}
         release_name: OpenMod.Economy V${{ github.event.inputs.version }}
         tag_name: V${{ github.event.inputs.version }}
-    - name: Upload Net461 Release to GitHub
-      uses: actions/upload-release-asset@master
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        asset_content_type: application/zip
-        asset_name: OpenMod.Economy_net461.zip
-        asset_path: Releases/OpenMod.Economy_net461.zip
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-    - name: Upload Netstandard2.0 Release to GitHub
-      uses: actions/upload-release-asset@master
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        asset_content_type: application/zip
-        asset_name: OpenMod.Economy_netstandard2.0.zip
-        asset_path: Releases/OpenMod.Economy_netstandard2.0.zip
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
