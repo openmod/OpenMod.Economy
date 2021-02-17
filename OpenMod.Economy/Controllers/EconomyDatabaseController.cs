@@ -24,14 +24,37 @@ namespace OpenMod.Economy.Controllers
     {
         private readonly IEventBus m_EventBus;
         private readonly IServiceProvider m_ServiceProvider;
+
         private IEconomyProvider m_Database;
 
-        public EconomyDatabaseController(IPluginAccessor<Economy> economyPlugin, IEventBus eventBus,
+        public EconomyDatabaseController(IEventBus eventBus,
+            IPluginAccessor<Economy> economyPlugin,
             IServiceProvider serviceProvider) : base(economyPlugin)
         {
             m_EventBus = eventBus;
             m_ServiceProvider = serviceProvider;
             AsyncContext.Run(async () => await LoadControllerBaseAsync());
+        }
+
+        protected override Task ConfigurationChangedAsync()
+        {
+            if (!IsServiceLoaded)
+                return Task.CompletedTask;
+
+            var dataBaseType = DbStoreType switch
+            {
+                StoreType.DataStore => typeof(DataStoreDatabase),
+                StoreType.LiteDb => typeof(LiteDbDatabase),
+                StoreType.MySql => typeof(MySqlDatabase),
+                StoreType.UserData => typeof(UserDataDatabase),
+                _ => throw new ArgumentOutOfRangeException(nameof(DbStoreType), DbStoreType, null)
+            };
+
+            m_Database = ActivatorUtilities.CreateInstance(m_ServiceProvider, dataBaseType) as IEconomyProvider;
+            if (!(m_Database is MySqlDatabase mySqlDatabase))
+                return Task.CompletedTask;
+
+            return mySqlDatabase.CheckShemasAsync();
         }
 
         protected override Task LoadControllerAsync()
@@ -65,7 +88,7 @@ namespace OpenMod.Economy.Controllers
             var balance = await m_Database.GetBalanceAsync(ownerId, ownerType);
 
             var getBalanceEvent = new GetBalanceEvent(ownerId, ownerType, balance);
-            await m_EventBus.EmitAsync(EconomyPlugin.Instance, this, getBalanceEvent);
+            await m_EventBus.EmitAsync(EconomyPlugin.Instance!, this, getBalanceEvent);
 
             return balance;
         }
@@ -80,7 +103,7 @@ namespace OpenMod.Economy.Controllers
             var balance = await m_Database.UpdateBalanceAsync(ownerId, ownerType, amount, reason);
 
             var getBalanceEvent = new BalanceUpdatedEvent(ownerId, ownerType, oldBalance, balance, reason);
-            await m_EventBus.EmitAsync(EconomyPlugin.Instance, this, getBalanceEvent);
+            await m_EventBus.EmitAsync(EconomyPlugin.Instance!, this, getBalanceEvent);
 
             return balance;
         }
@@ -92,7 +115,7 @@ namespace OpenMod.Economy.Controllers
 
             var getBalanceEvent =
                 new BalanceUpdatedEvent(ownerId, ownerType, oldBalance, newBalance, "Set Balance Requested");
-            await m_EventBus.EmitAsync(EconomyPlugin.Instance, this, getBalanceEvent);
+            await m_EventBus.EmitAsync(EconomyPlugin.Instance!, this, getBalanceEvent);
         }
 
         #endregion

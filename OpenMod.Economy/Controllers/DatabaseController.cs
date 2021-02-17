@@ -27,6 +27,17 @@ namespace OpenMod.Economy.Controllers
         protected IConfiguration Configuration => EconomyPlugin.Instance.Configuration;
         protected IStringLocalizer StringLocalizer => EconomyPlugin.Instance.StringLocalizer;
 
+        /// This method should be called when IConfiguration change
+        internal Task ConfigurationChangedBaseAsync()
+        {
+            if (!IsServiceLoaded || EconomyPlugin.Instance == null) return Task.CompletedTask;
+
+            return ConfigurationChangedAsync();
+        }
+
+        /// Never call this method, you should call 'ConfigurationChangedBaseAsync' instead.
+        protected abstract Task ConfigurationChangedAsync();
+
         protected async Task LoadControllerBaseAsync()
         {
             if (IsServiceLoaded || EconomyPlugin.Instance == null)
