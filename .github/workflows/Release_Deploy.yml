@@ -43,6 +43,6 @@ jobs:
           Install: openmod install Openmod.Economy
           Nuget: https://www.nuget.org/packages/OpenMod.Economy
           Notes:
-            ${{ github.event.inputs.update_notes }}" 
+            ${{ github.event.inputs.update_notes }}
         release_name: OpenMod.Economy V${{ github.event.inputs.version }}
         tag_name: V${{ github.event.inputs.version }}
