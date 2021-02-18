@@ -44,5 +44,5 @@ jobs:
           Nuget: https://www.nuget.org/packages/OpenMod.Economy
           Notes:
             ${{ github.event.inputs.update_notes }}
-        release_name: OpenMod.Economy V${{ github.event.inputs.version }}
+        release_name: OpenMod.Economy v${{ github.event.inputs.version }}
         tag_name: V${{ github.event.inputs.version }}
