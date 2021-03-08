@@ -4,7 +4,6 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
-using OpenMod.API.Plugins;
 using OpenMod.Economy.API;
 
 #endregion
@@ -14,43 +13,42 @@ namespace OpenMod.Economy.Controllers
     ///Do not forget to call 'LoadControllerBaseAsync'
     public abstract class DatabaseController
     {
-        protected readonly IPluginAccessor<Economy> EconomyPlugin;
+        protected readonly IConfiguration Configuration;
+        protected readonly IStringLocalizer StringLocalizer;
 
-        protected DatabaseController(IPluginAccessor<Economy> economyPlugin)
+        protected DatabaseController(IConfiguration configuration, IStringLocalizer stringLocalizer)
         {
-            EconomyPlugin = economyPlugin;
+            Configuration = configuration;
+            StringLocalizer = stringLocalizer;
         }
 
-        protected StoreType DbStoreType { get; private set; }
-        protected bool IsServiceLoaded { get; private set; }
+        public StoreType DbStoreType { get; private set; }
+        public bool IsServiceLoaded { get; private set; }
 
-        protected IConfiguration Configuration => EconomyPlugin.Instance.Configuration;
-        protected IStringLocalizer StringLocalizer => EconomyPlugin.Instance.StringLocalizer;
-
-        /// This method should be called when IConfiguration change
-        internal Task ConfigurationChangedBaseAsync()
-        {
-            if (!IsServiceLoaded || EconomyPlugin.Instance == null) return Task.CompletedTask;
-
-            return ConfigurationChangedAsync();
-        }
-
-        /// Never call this method, you should call 'ConfigurationChangedBaseAsync' instead.
-        protected abstract Task ConfigurationChangedAsync();
+        /// Never call this method, you should call 'LoadControllerBaseAsync' instead.
+        protected abstract Task LoadControllerAsync();
 
         protected async Task LoadControllerBaseAsync()
         {
-            if (IsServiceLoaded || EconomyPlugin.Instance == null)
+            if (IsServiceLoaded)
                 return;
 
             var storeType = Configuration.GetSection("Database:Store_Type").Get<string>();
-            DbStoreType = Enum.TryParse<StoreType>(storeType, out var dbStoreType) ? dbStoreType : StoreType.DataStore;
+            DbStoreType = Enum.TryParse<StoreType>(storeType, true, out var dbStoreType)
+                ? dbStoreType
+                : StoreType.DataStore;
 
             await LoadControllerAsync();
             IsServiceLoaded = true;
         }
 
-        /// Never call this method, you should call 'LoadControllerBaseAsync' instead.
-        protected abstract Task LoadControllerAsync();
+        /// Never call this method, you should call 'ConfigurationChangedBaseAsync' instead.
+        protected abstract Task ConfigurationChangedAsync();
+
+        /// This method should be called when IConfiguration change
+        internal Task ConfigurationChangedBaseAsync()
+        {
+            return IsServiceLoaded ? ConfigurationChangedAsync() : Task.CompletedTask;
+        }
     }
 }
