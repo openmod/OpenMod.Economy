@@ -1,12 +1,15 @@
 ﻿#region
 
 using System;
-using Microsoft.Extensions.Configuration;
+using System.Threading.Tasks;
+using Autofac;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using OpenMod.API.Plugins;
+using OpenMod.Core.Console;
 using OpenMod.Core.Plugins;
-using OpenMod.Economy.API;
+using OpenMod.Economy.Controllers;
+using OpenMod.Extensions.Economy.Abstractions;
 
 #endregion
 
@@ -18,16 +21,26 @@ namespace OpenMod.Economy
 {
     public sealed class Economy : OpenModUniversalPlugin
     {
+        private readonly IConsoleActorAccessor m_ConsoleActorAccessor;
         internal readonly IStringLocalizer StringLocalizer;
 
         // ReSharper disable once SuggestBaseTypeForParameter
-        public Economy(ILogger<Economy> logger, IServiceProvider serviceProvider, IStringLocalizer stringLocalizer) :
-            base(serviceProvider)
+        public Economy(IConsoleActorAccessor consoleActorAccessor, IServiceProvider serviceProvider,
+            IStringLocalizer stringLocalizer) : base(serviceProvider)
         {
+            m_ConsoleActorAccessor = consoleActorAccessor;
             StringLocalizer = stringLocalizer;
-            var storeType = Configuration.GetSection("Database:Store_Type").Get<string>();
-            var dbStoreType = Enum.TryParse<StoreType>(storeType, true, out var dbType) ? dbType : StoreType.DataStore;
-            logger.LogInformation($"Database type set to: '{dbStoreType}'");
+        }
+
+        protected override async Task OnLoadAsync()
+        {
+            var economy = LifetimeScope.Resolve<IEconomyProvider>();
+            if (economy is not DatabaseController baseController)
+                return;
+
+            Logger.LogInformation($"Database type set to: '{baseController.DbStoreType}'");
+            await economy.GetBalanceAsync(m_ConsoleActorAccessor.Actor.Type,
+                m_ConsoleActorAccessor.Actor.Id); //force call to detect missing libs
         }
     }
 }
