@@ -1,46 +1,39 @@
 ﻿#region
 
 using System.Threading.Tasks;
-using OpenMod.API.Plugins;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Localization;
 using OpenMod.API.Users;
 using OpenMod.Economy.API;
 using OpenMod.Extensions.Economy.Abstractions;
 
 #endregion
 
-namespace OpenMod.Economy.Database
+namespace OpenMod.Economy.DataBase
 {
     internal sealed class UserDataDatabase : EconomyDatabaseCore
     {
-        private readonly IEconomyDispatcher m_EconomyDispatcher;
+        private readonly IEconomyDispatcher m_Dispatcher;
+        private readonly IStringLocalizer m_StringLocalizer;
         private readonly IUserDataStore m_UserDataStore;
 
-        public UserDataDatabase(IEconomyDispatcher dispatcher, IPluginAccessor<Economy> economyPlugin,
-            IUserDataStore userDataStore) : base(
-            economyPlugin)
+        public UserDataDatabase(IConfiguration configuration, IEconomyDispatcher dispatcher,
+            IStringLocalizer stringLocalizer, IUserDataStore userDataStore) : base(configuration)
         {
-            m_EconomyDispatcher = dispatcher;
+            m_Dispatcher = dispatcher;
+            m_StringLocalizer = stringLocalizer;
             m_UserDataStore = userDataStore;
         }
 
         public override Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
         {
-            var tcs = new TaskCompletionSource<decimal>();
-
-            m_EconomyDispatcher.Enqueue(async () =>
-            {
-                tcs.SetResult(await m_UserDataStore.GetUserDataAsync<decimal?>(ownerId, ownerType, TableName) ??
-                              DefaultBalance);
-            });
-
-            return tcs.Task;
+            return m_Dispatcher.EnqueueV2(async () =>
+                await m_UserDataStore.GetUserDataAsync<decimal?>(ownerId, ownerType, TableName) ?? DefaultBalance);
         }
 
         public override Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount, string _)
         {
-            var tcs = new TaskCompletionSource<decimal>();
-
-            m_EconomyDispatcher.Enqueue(async () =>
+            return m_Dispatcher.EnqueueV2(async () =>
             {
                 var balance = await m_UserDataStore.GetUserDataAsync<decimal?>(ownerId, ownerType, TableName) ??
                               DefaultBalance;
@@ -48,22 +41,18 @@ namespace OpenMod.Economy.Database
                 var newBalance = balance + amount;
                 if (newBalance < 0)
                     throw new NotEnoughBalanceException(
-                        StringLocalizer["economy:fail:not_enough_balance",
-                            new {Balance = balance - amount, CurrencySymbol}], balance);
+                        m_StringLocalizer["economy:fail:not_enough_balance",
+                            new {Balance = balance, EconomyProvider = (IEconomyProvider) this}], balance);
 
                 await m_UserDataStore.SetUserDataAsync(ownerId, ownerType, TableName, balance);
-
-                tcs.SetResult(balance);
+                return balance;
             });
-
-            return tcs.Task;
         }
 
         public override Task SetBalanceAsync(string ownerId, string ownerType, decimal balance)
         {
-            var tcs = new TaskCompletionSource<decimal>();
-            m_EconomyDispatcher.Enqueue(() => m_UserDataStore.SetUserDataAsync(ownerId, ownerType, TableName, balance));
-            return tcs.Task;
+            return m_Dispatcher.EnqueueV2(
+                () => m_UserDataStore.SetUserDataAsync(ownerId, ownerType, TableName, balance));
         }
     }
 }

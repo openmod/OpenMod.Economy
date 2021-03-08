@@ -3,21 +3,25 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Localization;
 using MySqlConnector;
-using OpenMod.API.Plugins;
 using OpenMod.Extensions.Economy.Abstractions;
 
 #endregion
 
-namespace OpenMod.Economy.Database
+namespace OpenMod.Economy.DataBase
 {
     internal sealed class MySqlDatabase : EconomyDatabaseCore
     {
-        public MySqlDatabase(IPluginAccessor<Economy> economyPlugin) : base(economyPlugin)
+        private readonly IStringLocalizer m_StringLocalizer;
+
+        public MySqlDatabase(IConfiguration configuration, IStringLocalizer stringLocalizer) : base(configuration)
         {
+            m_StringLocalizer = stringLocalizer;
         }
 
-        private string ConnectionString => EconomyPlugin.Instance.Configuration.GetSection("Database:Connection_String")
+        private string ConnectionString => Configuration
+            .GetSection("Database:Connection_String")
             .Get<string>();
 
         public async Task CheckShemasAsync()
@@ -27,7 +31,7 @@ namespace OpenMod.Economy.Database
             await connection.OpenAsync();
 
             command.CommandText = $"SHOW TABLES LIKE '{TableName}';";
-            if (await command.ExecuteScalarAsync() != null)
+            if (await command.ExecuteScalarAsync() is not null)
                 return;
 
             command.CommandText = $"CREATE TABLE `{TableName}` (" +
@@ -44,7 +48,6 @@ namespace OpenMod.Economy.Database
         {
             await using var connection = new MySqlConnection(ConnectionString);
             await using var command = connection.CreateCommand();
-            await connection.OpenAsync();
 
             command.Parameters.Add("@ownerid", MySqlDbType.VarChar).Value = ownerId;
             command.Parameters.Add("@ownertype", MySqlDbType.VarChar).Value = ownerType;
@@ -52,6 +55,7 @@ namespace OpenMod.Economy.Database
                                   $"FROM `{TableName}` " +
                                   "WHERE `Id` = @ownerid AND `Type` = @ownertype;";
 
+            await connection.OpenAsync();
             if (await command.ExecuteScalarAsync() is decimal balance) return balance;
 
             return DefaultBalance;
@@ -85,7 +89,8 @@ namespace OpenMod.Economy.Database
 
                 balance = await UpdateBalanceAsync(ownerId, ownerType, Math.Abs(amount), null);
                 throw new NotEnoughBalanceException(
-                    StringLocalizer["economy:fail:not_enough_balance", new {Balance = balance, CurrencySymbol}],
+                    m_StringLocalizer["economy:fail:not_enough_balance",
+                        new {Balance = balance, EconomyProvider = (IEconomyProvider) this}],
                     balance);
             }
         }
@@ -113,7 +118,6 @@ namespace OpenMod.Economy.Database
         {
             await using var connection = new MySqlConnection(ConnectionString);
             await using var command = connection.CreateCommand();
-            await connection.OpenAsync();
 
             command.Parameters.Add("@ownerid", MySqlDbType.VarChar).Value = ownerId;
             command.Parameters.Add("@ownertype", MySqlDbType.VarChar).Value = ownerType;
@@ -122,6 +126,7 @@ namespace OpenMod.Economy.Database
                                   "(`Id`, `Type`, `Balance`) VALUES " +
                                   "(@ownerid, @ownertype, @balance);";
 
+            await connection.OpenAsync();
             return await command.ExecuteNonQueryAsync() > 0;
         }
     }
