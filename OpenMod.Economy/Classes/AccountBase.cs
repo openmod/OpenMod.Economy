@@ -19,12 +19,20 @@ namespace OpenMod.Economy.Classes
             get => $"{m_OwnerType}_{m_OwnerId}";
             set
             {
-                var values = value.Split('_');
-                if (values.Length != 2)
+                var index = value.IndexOf('_');
+                if (index == -1)
                     throw new Exception($"Invalid UniqueId: {UniqueId}");
 
-                m_OwnerType = values[0].ToLower();
-                m_OwnerId = values[1].ToLower();
+                var type = value.Substring(0, index);
+                if (string.IsNullOrEmpty(type))
+                    throw new Exception($"Invalid UniqueId: {UniqueId}");
+
+                var id = value.Substring(index + 1);
+                if (string.IsNullOrEmpty(id))
+                    throw new Exception($"Invalid UniqueId: {UniqueId}");
+
+                m_OwnerType = type;
+                m_OwnerId = id;
             }
         }
 
