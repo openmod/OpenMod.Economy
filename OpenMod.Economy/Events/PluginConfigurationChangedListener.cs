@@ -32,7 +32,7 @@ namespace OpenMod.Economy.Events
             if (@event.Plugin is not Economy)
                 return Task.CompletedTask;
 
-            if (!(m_EconomyProvider is DatabaseController databaseController))
+            if (m_EconomyProvider is not DatabaseController databaseController)
                 return Task.CompletedTask;
 
             var storeType = @event.Configuration.GetSection("Database:Store_Type").Get<string>();
