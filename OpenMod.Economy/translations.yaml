@@ -1,17 +1,28 @@
 economy:
   default:
-    payment_reason: "Not specified"
+    payment_reason: "Reason: ''Not specified' by {Actor.DisplayName}"
   fail:
     invalid_amount: "Invalid amount: {Amount}"
     invalid_default_balance: "Invalid default balance: {Balance}"
     invalid_store_type: "Invalid store type: {StoreType} available types: {StoreTypes}"
-    not_enough_balance: "You don't have enough balance. Current balance: {Balance}{CurrencySymbol}"
+    not_enough_balance: "You don't have enough balance. Current balance: {Balance}{EconomyProvider.CurrencySymbol}" #There is no Actor on this call
     self_pay: "You can not pay to yourself."
-    user_not_found: "'{Target}' user not found."
+    user_not_found: "'{Input}' user not found."
   success:
-    show_balance: "Your balance: {Balance}{CurrencySymbol}."
-    show_balance_other: "{DisplayName}'s balance: {Balance}{CurrencySymbol}."
-    pay_player: "You payed {Amount} {CurrencyName} to {DisplayName}, your new balance {Balance}{CurrencySymbol}."
-    pay_console: "You changed the {DisplayName} balance by {Amount} {CurrencyName}, the new balance is {Balance}{CurrencySymbol}."
-    payed: "You receive a {Amount} {CurrencyName} payment from {DisplayName}, your new balance {Balance}{CurrencySymbol}."
-    payed_negative: "Your balance was withdrawn {Amount} {CurrencyName} by {DisplayName}, your new balance {Balance}{CurrencySymbol}."
+    show_balance: "Your balance: {Balance}{EconomyProvider.CurrencySymbol}."
+    show_balance_other: "{Target.DisplayName}'s balance: {Balance}{EconomyProvider.CurrencySymbol}."
+    pay_player: "You payed {Amount} {EconomyProvider.CurrencyName} to {Target.DisplayName}, your new balance {Balance}{EconomyProvider.CurrencySymbol}."
+    pay_bank: "You changed the {Target.DisplayName} balance by {Amount} {EconomyProvider.CurrencyName}, the new balance is {Balance}{EconomyProvider.CurrencySymbol}."
+    pay_self: "You changed your balance by {Amount} {EconomyProvider.CurrencyName}, your new balance is {Balance}{EconomyProvider.CurrencySymbol}."
+    payed: "You receive a {Amount} {EconomyProvider.CurrencyName} payment from {Actor.DisplayName}, your new balance {Balance}{EconomyProvider.CurrencySymbol}."
+    payed_negative: "Your balance was withdrawn {Amount} {EconomyProvider.CurrencyName} by {Actor.DisplayName}, your new balance {Balance}{EconomyProvider.CurrencySymbol}."
+
+#   EconomyProvider
+#       |   ->  CurrencyName
+#       |   ->  CurrencySymbol
+
+#   Actor/Target
+#       |   ->  DisplayName
+#       |   ->  FullActorName
+#       |   ->  Id
+#       |   ->  Type
