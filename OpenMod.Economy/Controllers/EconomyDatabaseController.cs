@@ -2,15 +2,18 @@
 
 using System;
 using System.Threading.Tasks;
+using Autofac;
 using JetBrains.Annotations;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Localization;
 using Nito.AsyncEx;
+using OpenMod.API;
 using OpenMod.API.Commands;
 using OpenMod.API.Eventing;
 using OpenMod.API.Ioc;
-using OpenMod.API.Plugins;
+using OpenMod.Core.Ioc;
 using OpenMod.Economy.API;
-using OpenMod.Economy.Database;
+using OpenMod.Economy.DataBase;
 using OpenMod.Economy.Events;
 using OpenMod.Extensions.Economy.Abstractions;
 
@@ -23,45 +26,34 @@ namespace OpenMod.Economy.Controllers
     public sealed class EconomyDatabaseController : DatabaseController, IEconomyProvider
     {
         private readonly IEventBus m_EventBus;
-        private readonly IServiceProvider m_ServiceProvider;
+        private readonly ILifetimeScope m_LifetimeScope;
+        private readonly IOpenModComponent m_OpenModComponent;
 
         private IEconomyProvider m_Database;
 
-        public EconomyDatabaseController(IEventBus eventBus,
-            IPluginAccessor<Economy> economyPlugin,
-            IServiceProvider serviceProvider) : base(economyPlugin)
+        public EconomyDatabaseController(IConfiguration configuration, IEventBus eventBus,
+            ILifetimeScope lifetimeScope,
+            IOpenModComponent openModComponent, IStringLocalizer stringLocalizer) : base(configuration, stringLocalizer)
         {
             m_EventBus = eventBus;
-            m_ServiceProvider = serviceProvider;
+            m_LifetimeScope = lifetimeScope;
+            m_OpenModComponent = openModComponent;
+
             AsyncContext.Run(async () => await LoadControllerBaseAsync());
-        }
-
-        protected override Task ConfigurationChangedAsync()
-        {
-            if (!IsServiceLoaded)
-                return Task.CompletedTask;
-
-            var dataBaseType = DbStoreType switch
-            {
-                StoreType.DataStore => typeof(DataStoreDatabase),
-                StoreType.LiteDb => typeof(LiteDbDatabase),
-                StoreType.MySql => typeof(MySqlDatabase),
-                StoreType.UserData => typeof(UserDataDatabase),
-                _ => throw new ArgumentOutOfRangeException(nameof(DbStoreType), DbStoreType, null)
-            };
-
-            m_Database = ActivatorUtilities.CreateInstance(m_ServiceProvider, dataBaseType) as IEconomyProvider;
-            if (!(m_Database is MySqlDatabase mySqlDatabase))
-                return Task.CompletedTask;
-
-            return mySqlDatabase.CheckShemasAsync();
         }
 
         protected override Task LoadControllerAsync()
         {
-            if (IsServiceLoaded)
-                return Task.CompletedTask;
+            return IsServiceLoaded ? Task.CompletedTask : CreateDatabaseProvider();
+        }
 
+        protected override Task ConfigurationChangedAsync()
+        {
+            return IsServiceLoaded ? CreateDatabaseProvider() : Task.CompletedTask;
+        }
+
+        private Task CreateDatabaseProvider()
+        {
             var dataBaseType = DbStoreType switch
             {
                 StoreType.DataStore => typeof(DataStoreDatabase),
@@ -71,11 +63,8 @@ namespace OpenMod.Economy.Controllers
                 _ => throw new ArgumentOutOfRangeException(nameof(DbStoreType), DbStoreType, null)
             };
 
-            m_Database = ActivatorUtilities.CreateInstance(m_ServiceProvider, dataBaseType) as IEconomyProvider;
-            if (!(m_Database is MySqlDatabase mySqlDatabase))
-                return Task.CompletedTask;
-
-            return mySqlDatabase.CheckShemasAsync();
+            m_Database = ActivatorUtilitiesEx.CreateInstance(m_LifetimeScope, dataBaseType) as IEconomyProvider;
+            return m_Database is MySqlDatabase mySqlDatabase ? mySqlDatabase.CheckShemasAsync() : Task.CompletedTask;
         }
 
         #region Economy
@@ -88,7 +77,7 @@ namespace OpenMod.Economy.Controllers
             var balance = await m_Database.GetBalanceAsync(ownerId, ownerType);
 
             var getBalanceEvent = new GetBalanceEvent(ownerId, ownerType, balance);
-            await m_EventBus.EmitAsync(EconomyPlugin.Instance!, this, getBalanceEvent);
+            await m_EventBus.EmitAsync(m_OpenModComponent, this, getBalanceEvent);
 
             return balance;
         }
@@ -103,7 +92,7 @@ namespace OpenMod.Economy.Controllers
             var balance = await m_Database.UpdateBalanceAsync(ownerId, ownerType, amount, reason);
 
             var getBalanceEvent = new BalanceUpdatedEvent(ownerId, ownerType, oldBalance, balance, reason);
-            await m_EventBus.EmitAsync(EconomyPlugin.Instance!, this, getBalanceEvent);
+            await m_EventBus.EmitAsync(m_OpenModComponent, this, getBalanceEvent);
 
             return balance;
         }
@@ -115,7 +104,7 @@ namespace OpenMod.Economy.Controllers
 
             var getBalanceEvent =
                 new BalanceUpdatedEvent(ownerId, ownerType, oldBalance, newBalance, "Set Balance Requested");
-            await m_EventBus.EmitAsync(EconomyPlugin.Instance!, this, getBalanceEvent);
+            await m_EventBus.EmitAsync(m_OpenModComponent, this, getBalanceEvent);
         }
 
         #endregion
