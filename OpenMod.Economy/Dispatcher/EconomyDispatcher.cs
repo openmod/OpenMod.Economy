@@ -23,7 +23,7 @@ namespace OpenMod.Economy.Dispatcher
         private readonly AutoResetEvent m_WaitHandle = new(false);
 
         private bool m_Disposed;
-        private bool m_IsLoaded;
+        private Thread m_LoopThread;
 
         public EconomyDispatcher(ILogger<Economy> logger)
         {
@@ -32,62 +32,187 @@ namespace OpenMod.Economy.Dispatcher
 
         public void Dispose()
         {
-            m_IsLoaded = false;
-            m_Disposed = true;
+            lock (this)
+            {
+                if (m_Disposed)
+                    return;
+
+                m_Disposed = true;
+            }
+
+            m_WaitHandle.Set();
+
+            m_LoopThread?.Join();
+            m_LoopThread = null;
+
+            m_WaitHandle?.Dispose();
         }
 
-        public void Enqueue(Func<Task> task, Action<Exception> exceptionHandler = null)
+        private bool LoadDispatcher()
         {
-            if (task == null)
-                throw new ArgumentNullException(nameof(task));
-
-            LoadDispatcher();
-            m_QueueActions.Enqueue(async () =>
+            lock (this)
             {
+                if (m_Disposed)
+                    return false;
+
+                if (m_LoopThread is not null)
+                    return true;
+
+                m_LoopThread = new Thread(Looper);
+            }
+
+            m_LoopThread.Start();
+            return true;
+        }
+
+        private void Looper()
+        {
+            while (true)
+            {
+                lock (this)
+                {
+                    if (m_Disposed)
+                        return;
+                }
+
+                m_WaitHandle.WaitOne();
+                ProcessQueue();
+            }
+        }
+
+        private void ProcessQueue()
+        {
+            while (m_QueueActions.TryDequeue(out var action))
+                //Try catch prevents exception in case of direct insert on ConcurrentQueue instead of Enqueue it
                 try
                 {
-                    await task();
+                    action.Invoke();
                 }
                 catch (Exception ex)
                 {
-                    if (exceptionHandler != null)
+                    m_Logger.LogError(ex, "Exception while dispatching a task");
+                }
+        }
+
+        #region Enqueue
+
+        public Task EnqueueV2(Action action, Action<Exception> exceptionHandler = null)
+        {
+            if (action is null)
+                throw new ArgumentNullException(nameof(action));
+
+            if (!LoadDispatcher())
+                throw new ObjectDisposedException(nameof(EconomyDispatcher));
+
+            var tcs = new TaskCompletionSource<Task>();
+            m_QueueActions.Enqueue(() =>
+            {
+                try
+                {
+                    action();
+                    tcs.SetResult(Task.CompletedTask);
+                }
+                catch (Exception ex)
+                {
+                    tcs.SetException(ex);
+
+                    if (exceptionHandler is not null)
                         exceptionHandler(ex);
                     else
                         m_Logger.LogError(ex, "Exception while dispatching a task");
                 }
             });
             m_WaitHandle.Set();
+            return tcs.Task;
         }
 
-        private void LoadDispatcher()
+        public Task EnqueueV2(Func<Task> task, Action<Exception> exceptionHandler = null)
         {
-            lock (this)
+            if (task is null)
+                throw new ArgumentNullException(nameof(task));
+
+            if (!LoadDispatcher())
+                throw new ObjectDisposedException(nameof(EconomyDispatcher));
+
+            var tcs = new TaskCompletionSource<Task>();
+            m_QueueActions.Enqueue(() =>
             {
-                if (m_IsLoaded)
-                    return;
+                try
+                {
+                    tcs.SetResult(task());
+                }
+                catch (Exception ex)
+                {
+                    tcs.SetException(ex);
 
-                m_IsLoaded = true;
-            }
-
-            new Thread(Looper).Start();
-        }
-
-        private void Looper()
-        {
-            while (!m_Disposed)
-            {
-                m_WaitHandle.WaitOne();
-                while (m_QueueActions.TryDequeue(out var action))
-                    //Try catch prevents exception in case of direct insert on ConcurrentQueue instead of Enqueue it
-                    try
-                    {
-                        action.Invoke();
-                    }
-                    catch (Exception ex)
-                    {
+                    if (exceptionHandler is not null)
+                        exceptionHandler(ex);
+                    else
                         m_Logger.LogError(ex, "Exception while dispatching a task");
-                    }
-            }
+                }
+            });
+            m_WaitHandle.Set();
+            return tcs.Task;
         }
+
+        public Task<T> EnqueueV2<T>(Func<T> action, Action<Exception> exceptionHandler = null)
+        {
+            if (action is null)
+                throw new ArgumentNullException(nameof(action));
+
+            if (!LoadDispatcher())
+                throw new ObjectDisposedException(nameof(EconomyDispatcher));
+
+            var tcs = new TaskCompletionSource<T>();
+            m_QueueActions.Enqueue(() =>
+            {
+                try
+                {
+                    tcs.SetResult(action());
+                }
+                catch (Exception ex)
+                {
+                    tcs.SetException(ex);
+
+                    if (exceptionHandler is not null)
+                        exceptionHandler(ex);
+                    else
+                        m_Logger.LogError(ex, "Exception while dispatching a task");
+                }
+            });
+            m_WaitHandle.Set();
+            return tcs.Task;
+        }
+
+        public Task<T> EnqueueV2<T>(Func<Task<T>> task, Action<Exception> exceptionHandler = null)
+        {
+            if (task is null)
+                throw new ArgumentNullException(nameof(task));
+
+            if (!LoadDispatcher())
+                throw new ObjectDisposedException(nameof(EconomyDispatcher));
+
+            var tcs = new TaskCompletionSource<T>();
+            m_QueueActions.Enqueue(async () =>
+            {
+                try
+                {
+                    tcs.SetResult(await task());
+                }
+                catch (Exception ex)
+                {
+                    tcs.SetException(ex);
+
+                    if (exceptionHandler is not null)
+                        exceptionHandler(ex);
+                    else
+                        m_Logger.LogError(ex, "Exception while dispatching a task");
+                }
+            });
+            m_WaitHandle.Set();
+            return tcs.Task;
+        }
+
+        #endregion
     }
 }
