@@ -2,15 +2,12 @@
 
 using System;
 using System.Threading.Tasks;
-using Autofac;
 using JetBrains.Annotations;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Localization;
-using Nito.AsyncEx;
 using OpenMod.API;
 using OpenMod.API.Commands;
 using OpenMod.API.Eventing;
 using OpenMod.API.Ioc;
+using OpenMod.API.Plugins;
 using OpenMod.Core.Ioc;
 using OpenMod.Economy.API;
 using OpenMod.Economy.DataBase;
@@ -21,25 +18,21 @@ using OpenMod.Extensions.Economy.Abstractions;
 
 namespace OpenMod.Economy.Controllers
 {
-    [PluginServiceImplementation]
+    [ServiceImplementation]
     [UsedImplicitly]
     public sealed class EconomyDatabaseController : DatabaseController, IEconomyProvider
     {
         private readonly IEventBus m_EventBus;
-        private readonly ILifetimeScope m_LifetimeScope;
         private readonly IOpenModComponent m_OpenModComponent;
 
         private IEconomyProvider m_Database;
 
-        public EconomyDatabaseController(IConfiguration configuration, IEventBus eventBus,
-            ILifetimeScope lifetimeScope,
-            IOpenModComponent openModComponent, IStringLocalizer stringLocalizer) : base(configuration, stringLocalizer)
+        public EconomyDatabaseController(IEventBus eventBus,
+            IOpenModComponent openModComponent,
+            IPluginAccessor<Economy> plugin) : base(plugin)
         {
             m_EventBus = eventBus;
-            m_LifetimeScope = lifetimeScope;
             m_OpenModComponent = openModComponent;
-
-            AsyncContext.Run(async () => await LoadControllerBaseAsync());
         }
 
         protected override Task LoadControllerAsync()
@@ -63,7 +56,9 @@ namespace OpenMod.Economy.Controllers
                 _ => throw new ArgumentOutOfRangeException(nameof(DbStoreType), DbStoreType, null)
             };
 
-            m_Database = ActivatorUtilitiesEx.CreateInstance(m_LifetimeScope, dataBaseType) as IEconomyProvider;
+            // ReSharper disable once PossibleNullReferenceException
+            m_Database =
+                ActivatorUtilitiesEx.CreateInstance(Plugin.Instance.LifetimeScope, dataBaseType) as IEconomyProvider;
             return m_Database is MySqlDatabase mySqlDatabase ? mySqlDatabase.CheckShemasAsync() : Task.CompletedTask;
         }
 
@@ -74,6 +69,7 @@ namespace OpenMod.Economy.Controllers
 
         public async Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
         {
+            await LoadControllerBaseAsync();
             var balance = await m_Database.GetBalanceAsync(ownerId, ownerType);
 
             var getBalanceEvent = new GetBalanceEvent(ownerId, ownerType, balance);
@@ -84,6 +80,7 @@ namespace OpenMod.Economy.Controllers
 
         public async Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount, string reason)
         {
+            await LoadControllerBaseAsync();
             if (amount == 0)
                 throw new UserFriendlyException(StringLocalizer["economy:fail:invalid_amount",
                     new {Amount = amount}]);
@@ -99,6 +96,7 @@ namespace OpenMod.Economy.Controllers
 
         public async Task SetBalanceAsync(string ownerId, string ownerType, decimal newBalance)
         {
+            await LoadControllerBaseAsync();
             var oldBalance = await m_Database.GetBalanceAsync(ownerId, ownerType);
             await m_Database.SetBalanceAsync(ownerId, ownerType, newBalance);
 
