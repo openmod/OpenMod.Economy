@@ -16,22 +16,5 @@
     <Company>OpenMod</Company>
     <Description>Economy plugin for OpenMod</Description>
     <LangVersion>9.0</LangVersion>
-    <Configurations>Debug;Release;GitHub</Configurations>
   </PropertyGroup>
-
-  <Target Name="CleanOldRelease" AfterTargets="Clean" Condition="$(ConfigurationName)=='GitHub'">
-    <RemoveDir Directories="../Releases" />
-  </Target>
-
-  <Target Name="CreateZip" AfterTargets="PostBuildEvent" Condition="$(ConfigurationName)=='GitHub'">
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="../Releases/$(ProjectName)" />
-
-    <!-- ReSharper disable UnknownProperty -->
-    <!-- ReSharper disable UnknownTask -->
-    <ZipDirectory DestinationFile="../Releases/$(ProjectName)_$(TargetFramework).zip" Overwrite="true"
-                  SourceDirectory="../Releases/$(ProjectName)" />
-    <!-- ReSharper restore UnknownTask -->
-    <!-- ReSharper restore UnknownProperty -->
-    <RemoveDir Directories="../Releases/$(ProjectName)" />
-  </Target>
 </Project>

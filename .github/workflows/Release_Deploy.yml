@@ -28,9 +28,9 @@ jobs:
     - name: Update version
       run: "sed -i \"s#<Version>0.0.0</Version>#<Version>${{ github.event.inputs.version }}</Version>#\" OpenMod.Economy/OpenMod.Economy.csproj"  
     - name: Build
-      run: dotnet build OpenMod.Economy --configuration GitHub --no-restore
+      run: dotnet build OpenMod.Economy --configuration Release --no-restore
     - name: Push to NuGet
-      run: dotnet nuget push OpenMod.Economy/bin/GitHub/*.nupkg
+      run: dotnet nuget push OpenMod.Economy/bin/Release/*.nupkg
              --api-key ${{ secrets.NUGET_DEPLOY_KEY }}
              --source https://api.nuget.org/v3/index.json
     - name: Release
