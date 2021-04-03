@@ -4,6 +4,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
+using OpenMod.API.Plugins;
 using OpenMod.Economy.API;
 
 #endregion
@@ -13,13 +14,24 @@ namespace OpenMod.Economy.Controllers
     ///Do not forget to call 'LoadControllerBaseAsync'
     public abstract class DatabaseController
     {
-        protected readonly IConfiguration Configuration;
-        protected readonly IStringLocalizer StringLocalizer;
+        protected readonly IPluginAccessor<Economy> Plugin;
+        private IStringLocalizer m_CachedStringLocalizer;
 
-        protected DatabaseController(IConfiguration configuration, IStringLocalizer stringLocalizer)
+        protected DatabaseController(IPluginAccessor<Economy> plugin)
         {
-            Configuration = configuration;
-            StringLocalizer = stringLocalizer;
+            Plugin = plugin;
+        }
+
+        protected IStringLocalizer StringLocalizer
+        {
+            get
+            {
+                if (Plugin.Instance is null)
+                    return m_CachedStringLocalizer;
+
+                m_CachedStringLocalizer ??= Plugin.Instance.StringLocalizer;
+                return Plugin.Instance.StringLocalizer;
+            }
         }
 
         public StoreType DbStoreType { get; private set; }
@@ -33,7 +45,8 @@ namespace OpenMod.Economy.Controllers
             if (IsServiceLoaded)
                 return;
 
-            var storeType = Configuration.GetSection("Database:Store_Type").Get<string>();
+            // ReSharper disable once PossibleNullReferenceException
+            var storeType = Plugin.Instance.Configuration.GetSection("Database:Store_Type").Get<string>();
             DbStoreType = Enum.TryParse<StoreType>(storeType, true, out var dbStoreType)
                 ? dbStoreType
                 : StoreType.DataStore;
@@ -48,6 +61,7 @@ namespace OpenMod.Economy.Controllers
         /// This method should be called when IConfiguration change
         internal Task ConfigurationChangedBaseAsync()
         {
+            m_CachedStringLocalizer = null;
             return IsServiceLoaded ? ConfigurationChangedAsync() : Task.CompletedTask;
         }
     }
