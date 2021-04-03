@@ -3,10 +3,12 @@
 using System;
 using System.Threading.Tasks;
 using Autofac;
+using Cysharp.Threading.Tasks;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using OpenMod.API.Plugins;
 using OpenMod.Core.Console;
+using OpenMod.Core.Helpers;
 using OpenMod.Core.Plugins;
 using OpenMod.Economy.Controllers;
 using OpenMod.Extensions.Economy.Abstractions;
@@ -32,15 +34,21 @@ namespace OpenMod.Economy
             StringLocalizer = stringLocalizer;
         }
 
-        protected override async Task OnLoadAsync()
+        protected override Task OnLoadAsync()
         {
-            var economy = LifetimeScope.Resolve<IEconomyProvider>();
-            if (economy is not DatabaseController baseController)
-                return;
+            AsyncHelper.Schedule("Economy load 1 frame delay.", async () =>
+            {
+                await UniTask.DelayFrame(1);
+                var economy = LifetimeScope.Resolve<IEconomyProvider>();
+                if (economy is not DatabaseController baseController)
+                    return;
 
-            Logger.LogInformation($"Database type set to: '{baseController.DbStoreType}'");
-            await economy.GetBalanceAsync(m_ConsoleActorAccessor.Actor.Type,
-                m_ConsoleActorAccessor.Actor.Id); //force call to detect missing libs
+                Logger.LogInformation($"Database type set to: '{baseController.DbStoreType}'");
+                await economy.GetBalanceAsync(m_ConsoleActorAccessor.Actor.Type,
+                    m_ConsoleActorAccessor.Actor.Id); //force call to detect missing libs
+            });
+
+            return Task.CompletedTask;
         }
     }
 }
