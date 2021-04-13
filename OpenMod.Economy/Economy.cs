@@ -16,8 +16,8 @@ using OpenMod.Extensions.Economy.Abstractions;
 #endregion
 
 [assembly:
-    PluginMetadata("OpenMod.Economy", Author = "OpenMod,Rube200", DisplayName = "Openmod.Economy",
-        Website = "https://github.com/openmodplugins/OpenMod.Economy")]
+    PluginMetadata("OpenMod.Economy", Author = "OpenMod,Rube200", DisplayName = "OpenMod.Economy",
+        Website = "https://github.com/openmod/OpenMod.Economy")]
 
 namespace OpenMod.Economy
 {
