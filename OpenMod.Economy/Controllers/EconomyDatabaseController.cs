@@ -1,7 +1,5 @@
 ﻿#region
 
-using System;
-using System.Threading.Tasks;
 using JetBrains.Annotations;
 using OpenMod.API;
 using OpenMod.API.Commands;
@@ -13,6 +11,9 @@ using OpenMod.Economy.API;
 using OpenMod.Economy.DataBase;
 using OpenMod.Economy.Events;
 using OpenMod.Extensions.Economy.Abstractions;
+using System;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 
 #endregion
 
@@ -64,8 +65,8 @@ namespace OpenMod.Economy.Controllers
 
         #region Economy
 
-        public string CurrencyName => m_Database.CurrencyName;
-        public string CurrencySymbol => m_Database.CurrencySymbol;
+        public string CurrencyName => Configuration.GetSection("Economy:CurrencyName").Get<string>();
+        public string CurrencySymbol => Configuration.GetSection("Economy:CurrencySymbol").Get<string>();
 
         public async Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
         {

@@ -53,7 +53,7 @@ namespace OpenMod.Economy.Commands
                         Context.Actor,
                         Balance = await m_EconomyProvider.GetBalanceAsync(targetUser.Id, targetUser.Type),
                         EconomyProvider = m_EconomyProvider,
-                        Target = Context.Actor
+                        Target = targetUser
                     }]);
                     return;
                 }

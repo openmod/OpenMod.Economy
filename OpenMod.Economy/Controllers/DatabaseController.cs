@@ -1,11 +1,11 @@
 ﻿#region
 
-using System;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
 using OpenMod.API.Plugins;
 using OpenMod.Economy.API;
+using System;
+using System.Threading.Tasks;
 
 #endregion
 
@@ -16,6 +16,7 @@ namespace OpenMod.Economy.Controllers
     {
         protected readonly IPluginAccessor<Economy> Plugin;
         private IStringLocalizer m_CachedStringLocalizer;
+        private IConfiguration m_CachedConfiguration;
 
         protected DatabaseController(IPluginAccessor<Economy> plugin)
         {
@@ -31,6 +32,18 @@ namespace OpenMod.Economy.Controllers
 
                 m_CachedStringLocalizer ??= Plugin.Instance.StringLocalizer;
                 return Plugin.Instance.StringLocalizer;
+            }
+        }
+
+        protected IConfiguration Configuration
+        {
+            get
+            {
+                if (Plugin.Instance is null)
+                    return m_CachedConfiguration;
+
+                m_CachedConfiguration ??= Plugin.Instance.Configuration;
+                return Plugin.Instance.Configuration;
             }
         }
 
@@ -62,6 +75,7 @@ namespace OpenMod.Economy.Controllers
         internal Task ConfigurationChangedBaseAsync()
         {
             m_CachedStringLocalizer = null;
+            m_CachedConfiguration = null;
             return IsServiceLoaded ? ConfigurationChangedAsync() : Task.CompletedTask;
         }
     }
