@@ -115,11 +115,7 @@ namespace OpenMod.Economy.Dispatcher
                 catch (Exception ex)
                 {
                     tcs.SetException(ex);
-
-                    if (exceptionHandler is not null)
-                        exceptionHandler(ex);
-                    else
-                        m_Logger.LogError(ex, "Exception while dispatching a task");
+                    exceptionHandler?.Invoke(ex);
                 }
             });
             m_WaitHandle.Set();
@@ -144,11 +140,7 @@ namespace OpenMod.Economy.Dispatcher
                 catch (Exception ex)
                 {
                     tcs.SetException(ex);
-
-                    if (exceptionHandler is not null)
-                        exceptionHandler(ex);
-                    else
-                        m_Logger.LogError(ex, "Exception while dispatching a task");
+                    exceptionHandler?.Invoke(ex);
                 }
             });
             m_WaitHandle.Set();
@@ -173,11 +165,7 @@ namespace OpenMod.Economy.Dispatcher
                 catch (Exception ex)
                 {
                     tcs.SetException(ex);
-
-                    if (exceptionHandler is not null)
-                        exceptionHandler(ex);
-                    else
-                        m_Logger.LogError(ex, "Exception while dispatching a task");
+                    exceptionHandler?.Invoke(ex);
                 }
             });
             m_WaitHandle.Set();
@@ -202,11 +190,7 @@ namespace OpenMod.Economy.Dispatcher
                 catch (Exception ex)
                 {
                     tcs.SetException(ex);
-
-                    if (exceptionHandler is not null)
-                        exceptionHandler(ex);
-                    else
-                        m_Logger.LogError(ex, "Exception while dispatching a task");
+                    exceptionHandler?.Invoke(ex);
                 }
             });
             m_WaitHandle.Set();
