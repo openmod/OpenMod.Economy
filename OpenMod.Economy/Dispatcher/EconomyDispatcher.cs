@@ -104,7 +104,7 @@ namespace OpenMod.Economy.Dispatcher
             if (!LoadDispatcher())
                 throw new ObjectDisposedException(nameof(EconomyDispatcher));
 
-            var tcs = new TaskCompletionSource<Task>();
+            var tcs = new TaskCompletionSource<Task>(TaskCreationOptions.RunContinuationsAsynchronously);
             m_QueueActions.Enqueue(() =>
             {
                 try
@@ -119,7 +119,7 @@ namespace OpenMod.Economy.Dispatcher
                 }
             });
             m_WaitHandle.Set();
-            return tcs.Task.Result;
+            return tcs.Task;
         }
 
         public Task EnqueueV2(Func<Task> task, Action<Exception> exceptionHandler = null)
@@ -130,12 +130,13 @@ namespace OpenMod.Economy.Dispatcher
             if (!LoadDispatcher())
                 throw new ObjectDisposedException(nameof(EconomyDispatcher));
 
-            var tcs = new TaskCompletionSource<Task>();
+            var tcs = new TaskCompletionSource<Task>(TaskCreationOptions.RunContinuationsAsynchronously);
             m_QueueActions.Enqueue(() =>
             {
                 try
                 {
-                    tcs.SetResult(task());
+                    task()?.GetAwaiter().GetResult();
+                    tcs.SetResult(Task.CompletedTask);
                 }
                 catch (Exception ex)
                 {
@@ -144,7 +145,7 @@ namespace OpenMod.Economy.Dispatcher
                 }
             });
             m_WaitHandle.Set();
-            return tcs.Task.Result;
+            return tcs.Task;
         }
 
         public Task<T> EnqueueV2<T>(Func<T> action, Action<Exception> exceptionHandler = null)
@@ -155,12 +156,12 @@ namespace OpenMod.Economy.Dispatcher
             if (!LoadDispatcher())
                 throw new ObjectDisposedException(nameof(EconomyDispatcher));
 
-            var tcs = new TaskCompletionSource<Task<T>>();
+            var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
             m_QueueActions.Enqueue(() =>
             {
                 try
                 {
-                    var result = Task.FromResult(action());
+                    var result = action();
                     tcs.SetResult(result);
                 }
                 catch (Exception ex)
@@ -170,7 +171,7 @@ namespace OpenMod.Economy.Dispatcher
                 }
             });
             m_WaitHandle.Set();
-            return tcs.Task.Result;
+            return tcs.Task;
         }
 
         public Task<T> EnqueueV2<T>(Func<Task<T>> task, Action<Exception> exceptionHandler = null)
@@ -181,12 +182,13 @@ namespace OpenMod.Economy.Dispatcher
             if (!LoadDispatcher())
                 throw new ObjectDisposedException(nameof(EconomyDispatcher));
 
-            var tcs = new TaskCompletionSource<Task<T>>();
+            var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
             m_QueueActions.Enqueue(() =>
             {
                 try
                 {
-                    tcs.SetResult(task());
+                    var result = task().GetAwaiter().GetResult();
+                    tcs.SetResult(result);
                 }
                 catch (Exception ex)
                 {
@@ -195,7 +197,7 @@ namespace OpenMod.Economy.Dispatcher
                 }
             });
             m_WaitHandle.Set();
-            return tcs.Task.Result;
+            return tcs.Task;
         }
 
         #endregion
