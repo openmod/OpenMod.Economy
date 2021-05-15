@@ -119,7 +119,7 @@ namespace OpenMod.Economy.Dispatcher
                 }
             });
             m_WaitHandle.Set();
-            return tcs.Task;
+            return tcs.Task.Result;
         }
 
         public Task EnqueueV2(Func<Task> task, Action<Exception> exceptionHandler = null)
@@ -144,7 +144,7 @@ namespace OpenMod.Economy.Dispatcher
                 }
             });
             m_WaitHandle.Set();
-            return tcs.Task;
+            return tcs.Task.Result;
         }
 
         public Task<T> EnqueueV2<T>(Func<T> action, Action<Exception> exceptionHandler = null)
@@ -155,12 +155,13 @@ namespace OpenMod.Economy.Dispatcher
             if (!LoadDispatcher())
                 throw new ObjectDisposedException(nameof(EconomyDispatcher));
 
-            var tcs = new TaskCompletionSource<T>();
+            var tcs = new TaskCompletionSource<Task<T>>();
             m_QueueActions.Enqueue(() =>
             {
                 try
                 {
-                    tcs.SetResult(action());
+                    var result = Task.FromResult(action());
+                    tcs.SetResult(result);
                 }
                 catch (Exception ex)
                 {
@@ -169,7 +170,7 @@ namespace OpenMod.Economy.Dispatcher
                 }
             });
             m_WaitHandle.Set();
-            return tcs.Task;
+            return tcs.Task.Result;
         }
 
         public Task<T> EnqueueV2<T>(Func<Task<T>> task, Action<Exception> exceptionHandler = null)
@@ -180,12 +181,12 @@ namespace OpenMod.Economy.Dispatcher
             if (!LoadDispatcher())
                 throw new ObjectDisposedException(nameof(EconomyDispatcher));
 
-            var tcs = new TaskCompletionSource<T>();
-            m_QueueActions.Enqueue(async () =>
+            var tcs = new TaskCompletionSource<Task<T>>();
+            m_QueueActions.Enqueue(() =>
             {
                 try
                 {
-                    tcs.SetResult(await task());
+                    tcs.SetResult(task());
                 }
                 catch (Exception ex)
                 {
@@ -194,7 +195,7 @@ namespace OpenMod.Economy.Dispatcher
                 }
             });
             m_WaitHandle.Set();
-            return tcs.Task;
+            return tcs.Task.Result;
         }
 
         #endregion
