@@ -18,7 +18,7 @@ namespace OpenMod.Economy.Dispatcher
     public sealed class EconomyDispatcher : IEconomyDispatcher
     {
         private readonly ILogger<EconomyDispatcher> m_Logger;
-        private readonly ConcurrentQueue<Action> m_QueueActions = new();
+        private readonly ConcurrentQueue<Func<Task>> m_QueueActions = new();
 
         private bool m_IsProcessing;
 
@@ -37,14 +37,14 @@ namespace OpenMod.Economy.Dispatcher
                 m_IsProcessing = true;
             }
 
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 do
                 {
                     while (m_QueueActions.TryDequeue(out var action))
                         try
                         {
-                            action.Invoke();
+                            await action();
                         }
                         catch (Exception ex)
                         {
@@ -94,17 +94,20 @@ namespace OpenMod.Economy.Dispatcher
                 throw new ArgumentNullException(nameof(task));
 
             var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
-            m_QueueActions.Enqueue(() =>
+            m_QueueActions.Enqueue(async () =>
             {
                 try
                 {
-                    var result = task().GetAwaiter().GetResult();
+                    var result = await task();
                     tcs.SetResult(result);
                 }
                 catch (Exception ex)
                 {
                     tcs.SetException(ex);
-                    exceptionHandler?.Invoke(ex);
+                    if (exceptionHandler is null)
+                        throw;
+
+                    exceptionHandler(ex);
                 }
             });
             ProcessQueue();
