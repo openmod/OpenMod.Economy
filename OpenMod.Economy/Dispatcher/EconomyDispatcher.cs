@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,171 +15,83 @@ namespace OpenMod.Economy.Dispatcher
 {
     [ServiceImplementation(Lifetime = ServiceLifetime.Singleton)]
     [UsedImplicitly]
-    public sealed class EconomyDispatcher : IEconomyDispatcher, IDisposable
+    public sealed class EconomyDispatcher : IEconomyDispatcher
     {
-        private readonly ILogger<Economy> m_Logger;
+        private readonly ILogger<EconomyDispatcher> m_Logger;
         private readonly ConcurrentQueue<Action> m_QueueActions = new();
-        private readonly AutoResetEvent m_WaitHandle = new(false);
 
-        private bool m_Disposed;
-        private Thread m_LoopThread;
+        private bool m_IsProcessing;
 
-        public EconomyDispatcher(ILogger<Economy> logger)
+        public EconomyDispatcher(ILogger<EconomyDispatcher> logger)
         {
             m_Logger = logger;
         }
 
-        public void Dispose()
-        {
-            lock (this)
-            {
-                if (m_Disposed)
-                    return;
-
-                m_Disposed = true;
-            }
-
-            m_WaitHandle.Set();
-
-            m_LoopThread?.Join();
-            m_LoopThread = null;
-
-            m_WaitHandle?.Dispose();
-        }
-
-        private bool LoadDispatcher()
-        {
-            lock (this)
-            {
-                if (m_Disposed)
-                    return false;
-
-                if (m_LoopThread is not null)
-                    return true;
-
-                m_LoopThread = new Thread(Looper);
-            }
-
-            m_LoopThread.Start();
-            return true;
-        }
-
-        private void Looper()
-        {
-            while (true)
-            {
-                lock (this)
-                {
-                    if (m_Disposed)
-                        return;
-                }
-
-                m_WaitHandle.WaitOne();
-                ProcessQueue();
-            }
-        }
-
         private void ProcessQueue()
         {
-            while (m_QueueActions.TryDequeue(out var action))
-                //Try catch prevents exception in case of direct insert on ConcurrentQueue instead of Enqueue it
-                try
+            lock (this)
+            {
+                if (m_IsProcessing || m_QueueActions.IsEmpty)
+                    return;
+
+                m_IsProcessing = true;
+            }
+
+            Task.Run(() =>
+            {
+                do
                 {
-                    action.Invoke();
-                }
-                catch (Exception ex)
-                {
-                    m_Logger.LogError(ex, "Exception while dispatching a task");
-                }
+                    while (m_QueueActions.TryDequeue(out var action))
+                        try
+                        {
+                            action.Invoke();
+                        }
+                        catch (Exception ex)
+                        {
+                            m_Logger.LogError(ex, "Exception while dispatching a task");
+                        }
+
+                    lock (this)
+                    {
+                        if (!m_QueueActions.IsEmpty)
+                            continue;
+
+                        m_IsProcessing = false;
+                        return;
+                    }
+                } while (true);
+            });
         }
 
         #region Enqueue
 
         public Task EnqueueV2(Action action, Action<Exception> exceptionHandler = null)
         {
-            if (action is null)
-                throw new ArgumentNullException(nameof(action));
-
-            if (!LoadDispatcher())
-                throw new ObjectDisposedException(nameof(EconomyDispatcher));
-
-            var tcs = new TaskCompletionSource<Task>(TaskCreationOptions.RunContinuationsAsynchronously);
-            m_QueueActions.Enqueue(() =>
+            return EnqueueV2(() =>
             {
-                try
-                {
-                    action();
-                    tcs.SetResult(Task.CompletedTask);
-                }
-                catch (Exception ex)
-                {
-                    tcs.SetException(ex);
-                    exceptionHandler?.Invoke(ex);
-                }
-            });
-            m_WaitHandle.Set();
-            return tcs.Task;
+                action();
+                return Task.FromResult(true);
+            }, exceptionHandler);
         }
 
         public Task EnqueueV2(Func<Task> task, Action<Exception> exceptionHandler = null)
         {
-            if (task is null)
-                throw new ArgumentNullException(nameof(task));
-
-            if (!LoadDispatcher())
-                throw new ObjectDisposedException(nameof(EconomyDispatcher));
-
-            var tcs = new TaskCompletionSource<Task>(TaskCreationOptions.RunContinuationsAsynchronously);
-            m_QueueActions.Enqueue(() =>
+            return EnqueueV2(() =>
             {
-                try
-                {
-                    task()?.GetAwaiter().GetResult();
-                    tcs.SetResult(Task.CompletedTask);
-                }
-                catch (Exception ex)
-                {
-                    tcs.SetException(ex);
-                    exceptionHandler?.Invoke(ex);
-                }
-            });
-            m_WaitHandle.Set();
-            return tcs.Task;
+                task()?.GetAwaiter().GetResult();
+                return Task.FromResult(true);
+            }, exceptionHandler);
         }
 
         public Task<T> EnqueueV2<T>(Func<T> action, Action<Exception> exceptionHandler = null)
         {
-            if (action is null)
-                throw new ArgumentNullException(nameof(action));
-
-            if (!LoadDispatcher())
-                throw new ObjectDisposedException(nameof(EconomyDispatcher));
-
-            var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
-            m_QueueActions.Enqueue(() =>
-            {
-                try
-                {
-                    var result = action();
-                    tcs.SetResult(result);
-                }
-                catch (Exception ex)
-                {
-                    tcs.SetException(ex);
-                    exceptionHandler?.Invoke(ex);
-                }
-            });
-            m_WaitHandle.Set();
-            return tcs.Task;
+            return EnqueueV2(() => Task.FromResult(action()), exceptionHandler);
         }
 
         public Task<T> EnqueueV2<T>(Func<Task<T>> task, Action<Exception> exceptionHandler = null)
         {
             if (task is null)
                 throw new ArgumentNullException(nameof(task));
-
-            if (!LoadDispatcher())
-                throw new ObjectDisposedException(nameof(EconomyDispatcher));
 
             var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
             m_QueueActions.Enqueue(() =>
@@ -196,7 +107,7 @@ namespace OpenMod.Economy.Dispatcher
                     exceptionHandler?.Invoke(ex);
                 }
             });
-            m_WaitHandle.Set();
+            ProcessQueue();
             return tcs.Task;
         }
 
