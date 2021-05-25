@@ -25,17 +25,27 @@ namespace OpenMod.Economy.Controllers
 
         protected abstract Task LoadControllerAsync();
 
-        private async Task LoadControllerBaseAsync()
+        private Task LoadControllerBaseAsync()
+        {
+            SetStoreType();
+            return LoadControllerAsync();
+        }
+
+        protected abstract Task ConfigurationChangedAsync();
+
+        internal Task ConfigurationChangedBaseAsync()
+        {
+            SetStoreType();
+            return ConfigurationChangedAsync();
+        }
+
+        private void SetStoreType()
         {
             var storeType = Configuration.GetSection("Database:Store_Type").Get<string>();
             DbStoreType = Enum.TryParse<StoreType>(storeType, true, out var dbStoreType)
                 ? dbStoreType
                 : StoreType.DataStore;
-
-            await LoadControllerAsync();
         }
-
-        internal abstract Task ConfigurationChangedAsync();
 
         internal Task InjectAndLoad(ILifetimeScope lifetimeScope)
         {

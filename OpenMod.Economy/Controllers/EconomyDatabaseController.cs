@@ -28,7 +28,7 @@ namespace OpenMod.Economy.Controllers
             return CreateDatabaseProvider();
         }
 
-        internal override Task ConfigurationChangedAsync()
+        protected override Task ConfigurationChangedAsync()
         {
             return CreateDatabaseProvider();
         }

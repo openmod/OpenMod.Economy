@@ -32,7 +32,7 @@ namespace OpenMod.Economy.Events
             if (m_EconomyProvider is not DatabaseController databaseController)
                 return;
 
-            await databaseController.ConfigurationChangedAsync();
+            await databaseController.ConfigurationChangedBaseAsync();
             m_Logger.LogInformation($"Config changed! Database type set to: '{databaseController.DbStoreType}'");
         }
     }
