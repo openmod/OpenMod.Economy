@@ -42,7 +42,7 @@ namespace OpenMod.Economy.Commands
             if (Context.Parameters.Length > 0 && await CheckPermissionAsync(OthersPerm) == PermissionGrantResult.Grant)
             {
                 var targetUser = await Context.Parameters.GetAsync<IUser>(0);
-                if (targetUser is null)
+                if (targetUser == null)
                     throw new UserFriendlyException(m_StringLocalizer["economy:fail:user_not_found",
                         new {Input = await Context.Parameters.GetAsync<string>(0)}]);
 

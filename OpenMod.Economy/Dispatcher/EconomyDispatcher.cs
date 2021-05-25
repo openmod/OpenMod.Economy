@@ -90,7 +90,7 @@ namespace OpenMod.Economy.Dispatcher
 
         public Task<T> EnqueueV2<T>(Func<Task<T>> task, Action<Exception> exceptionHandler = null)
         {
-            if (task is null)
+            if (task == null)
                 throw new ArgumentNullException(nameof(task));
 
             var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -104,7 +104,7 @@ namespace OpenMod.Economy.Dispatcher
                 catch (Exception ex)
                 {
                     tcs.SetException(ex);
-                    if (exceptionHandler is null)
+                    if (exceptionHandler == null)
                         throw;
 
                     exceptionHandler(ex);

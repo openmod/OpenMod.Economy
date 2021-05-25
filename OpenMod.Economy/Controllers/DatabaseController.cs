@@ -27,7 +27,7 @@ namespace OpenMod.Economy.Controllers
         {
             get
             {
-                if (Plugin.Instance is null)
+                if (Plugin.Instance == null)
                     return m_CachedStringLocalizer;
 
                 m_CachedStringLocalizer ??= Plugin.Instance.StringLocalizer;
@@ -39,7 +39,7 @@ namespace OpenMod.Economy.Controllers
         {
             get
             {
-                if (Plugin.Instance is null)
+                if (Plugin.Instance == null)
                     return m_CachedConfiguration;
 
                 m_CachedConfiguration ??= Plugin.Instance.Configuration;

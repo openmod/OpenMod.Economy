@@ -31,7 +31,7 @@ namespace OpenMod.Economy.DataBase
             await connection.OpenAsync();
 
             command.CommandText = $"SHOW TABLES LIKE '{TableName}';";
-            if (await command.ExecuteScalarAsync() is not null)
+            if (await command.ExecuteScalarAsync() != null)
                 return;
 
             command.CommandText = $"CREATE TABLE `{TableName}` (" +

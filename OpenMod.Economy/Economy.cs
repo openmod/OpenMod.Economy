@@ -3,7 +3,6 @@
 using System;
 using System.Threading.Tasks;
 using Autofac;
-using Cysharp.Threading.Tasks;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using OpenMod.API.Plugins;
@@ -45,7 +44,7 @@ namespace OpenMod.Economy
                 if (economy is not DatabaseController baseController)
                     return;
 
-                await UniTask.WaitUntil(() => m_PluginAccessor.Instance is not null);
+                await UniTask.WaitUntil(() => m_PluginAccessor.Instance != null);
                 Logger.LogInformation($"Database type set to: '{baseController.DbStoreType}'");
                 await economy.GetBalanceAsync(m_ConsoleActorAccessor.Actor.Type,
                     m_ConsoleActorAccessor.Actor.Id); //force call to detect missing libs
