@@ -1,6 +1,9 @@
 ﻿#region
 
+using System;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
+using Microsoft.Extensions.Configuration;
 using OpenMod.API;
 using OpenMod.API.Commands;
 using OpenMod.API.Eventing;
@@ -11,9 +14,6 @@ using OpenMod.Economy.API;
 using OpenMod.Economy.DataBase;
 using OpenMod.Economy.Events;
 using OpenMod.Extensions.Economy.Abstractions;
-using System;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
 
 #endregion
 

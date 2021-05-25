@@ -1,11 +1,11 @@
 ﻿#region
 
+using System;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
 using OpenMod.API.Plugins;
 using OpenMod.Economy.API;
-using System;
-using System.Threading.Tasks;
 
 #endregion
 
@@ -15,8 +15,8 @@ namespace OpenMod.Economy.Controllers
     public abstract class DatabaseController
     {
         protected readonly IPluginAccessor<Economy> Plugin;
-        private IStringLocalizer m_CachedStringLocalizer;
         private IConfiguration m_CachedConfiguration;
+        private IStringLocalizer m_CachedStringLocalizer;
 
         protected DatabaseController(IPluginAccessor<Economy> plugin)
         {

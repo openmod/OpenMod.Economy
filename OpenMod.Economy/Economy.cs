@@ -24,25 +24,28 @@ namespace OpenMod.Economy
     public sealed class Economy : OpenModUniversalPlugin
     {
         private readonly IConsoleActorAccessor m_ConsoleActorAccessor;
+        private readonly IPluginAccessor<Economy> m_PluginAccessor;
         internal readonly IStringLocalizer StringLocalizer;
 
         // ReSharper disable once SuggestBaseTypeForParameter
-        public Economy(IConsoleActorAccessor consoleActorAccessor, IServiceProvider serviceProvider,
+        public Economy(IConsoleActorAccessor consoleActorAccessor, IPluginAccessor<Economy> plugin,
+            IServiceProvider serviceProvider,
             IStringLocalizer stringLocalizer) : base(serviceProvider)
         {
             m_ConsoleActorAccessor = consoleActorAccessor;
+            m_PluginAccessor = plugin;
             StringLocalizer = stringLocalizer;
         }
 
         protected override Task OnLoadAsync()
         {
-            AsyncHelper.Schedule("Economy load 1 frame delay.", async () =>
+            AsyncHelper.Schedule("IEconomyProvider load waiting for plugin instance.", async () =>
             {
-                await UniTask.DelayFrame(1);
                 var economy = LifetimeScope.Resolve<IEconomyProvider>();
                 if (economy is not DatabaseController baseController)
                     return;
 
+                await UniTask.WaitUntil(() => m_PluginAccessor.Instance is not null);
                 Logger.LogInformation($"Database type set to: '{baseController.DbStoreType}'");
                 await economy.GetBalanceAsync(m_ConsoleActorAccessor.Actor.Type,
                     m_ConsoleActorAccessor.Actor.Id); //force call to detect missing libs
