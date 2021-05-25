@@ -2,12 +2,9 @@
 
 using System;
 using System.Threading.Tasks;
-using Autofac;
-using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using OpenMod.API.Plugins;
 using OpenMod.Core.Console;
-using OpenMod.Core.Helpers;
 using OpenMod.Core.Plugins;
 using OpenMod.Economy.Controllers;
 using OpenMod.Extensions.Economy.Abstractions;
@@ -23,34 +20,26 @@ namespace OpenMod.Economy
     public sealed class Economy : OpenModUniversalPlugin
     {
         private readonly IConsoleActorAccessor m_ConsoleActorAccessor;
-        private readonly IPluginAccessor<Economy> m_PluginAccessor;
-        internal readonly IStringLocalizer StringLocalizer;
+        private readonly IEconomyProvider m_EconomyProvider;
 
-        // ReSharper disable once SuggestBaseTypeForParameter
-        public Economy(IConsoleActorAccessor consoleActorAccessor, IPluginAccessor<Economy> plugin,
-            IServiceProvider serviceProvider,
-            IStringLocalizer stringLocalizer) : base(serviceProvider)
+        public Economy(IConsoleActorAccessor consoleActorAccessor,
+            IEconomyProvider economyProvider,
+            IServiceProvider serviceProvider) : base(serviceProvider)
         {
             m_ConsoleActorAccessor = consoleActorAccessor;
-            m_PluginAccessor = plugin;
-            StringLocalizer = stringLocalizer;
+            m_EconomyProvider = economyProvider;
         }
 
-        protected override Task OnLoadAsync()
+        protected override async Task OnLoadAsync()
         {
-            AsyncHelper.Schedule("IEconomyProvider load waiting for plugin instance.", async () =>
-            {
-                var economy = LifetimeScope.Resolve<IEconomyProvider>();
-                if (economy is not DatabaseController baseController)
-                    return;
+            if (m_EconomyProvider is not DatabaseController databaseController)
+                return;
 
-                await UniTask.WaitUntil(() => m_PluginAccessor.Instance != null);
-                Logger.LogInformation($"Database type set to: '{baseController.DbStoreType}'");
-                await economy.GetBalanceAsync(m_ConsoleActorAccessor.Actor.Type,
-                    m_ConsoleActorAccessor.Actor.Id); //force call to detect missing libs
-            });
+            await databaseController.InjectAndLoad(LifetimeScope);
+            Logger.LogInformation($"Database type set to: '{databaseController.DbStoreType}'");
 
-            return Task.CompletedTask;
+            await m_EconomyProvider.GetBalanceAsync(m_ConsoleActorAccessor.Actor.Type,
+                m_ConsoleActorAccessor.Actor.Id); //force call to detect missing libs
         }
     }
 }
