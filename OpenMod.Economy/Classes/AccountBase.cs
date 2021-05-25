@@ -23,11 +23,11 @@ namespace OpenMod.Economy.Classes
                 if (index == -1)
                     throw new Exception($"Invalid UniqueId: {UniqueId}");
 
-                var type = value.Substring(0, index);
+                var type = value[..index];
                 if (string.IsNullOrEmpty(type))
                     throw new Exception($"Invalid UniqueId: {UniqueId}");
 
-                var id = value.Substring(index + 1);
+                var id = value[(index + 1)..];
                 if (string.IsNullOrEmpty(id))
                     throw new Exception($"Invalid UniqueId: {UniqueId}");
 
