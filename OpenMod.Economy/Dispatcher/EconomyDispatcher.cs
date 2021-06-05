@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OpenMod.API.Ioc;
 using OpenMod.Economy.API;
+using OpenMod.Extensions.Economy.Abstractions;
 
 #endregion
 
@@ -76,9 +77,9 @@ namespace OpenMod.Economy.Dispatcher
 
         public Task EnqueueV2(Func<Task> task, Action<Exception> exceptionHandler = null)
         {
-            return EnqueueV2(() =>
+            return EnqueueV2(async () =>
             {
-                task()?.GetAwaiter().GetResult();
+                await task();
                 return Task.FromResult(true);
             }, exceptionHandler);
         }
@@ -100,6 +101,12 @@ namespace OpenMod.Economy.Dispatcher
                 {
                     var result = await task();
                     tcs.SetResult(result);
+                }
+                catch (NotEnoughBalanceException ex)
+                {
+                    tcs.SetException(ex);
+                    if (exceptionHandler != null)
+                        exceptionHandler(ex);
                 }
                 catch (Exception ex)
                 {
