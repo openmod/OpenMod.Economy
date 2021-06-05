@@ -6,3 +6,4 @@ Economy:
   CurrencyName: Cash
   CurrencySymbol: $
   Default_Balance: 300
+  Set_Negative_Zero: True #When player have permission to give negative money, should plugin set the balance to zero or throw a not enough money
