@@ -57,7 +57,7 @@ namespace OpenMod.Economy.DataBase
                 if (newBalance < 0)
                     throw new NotEnoughBalanceException(
                         m_StringLocalizer["economy:fail:not_enough_balance",
-                            new {Balance = balance, EconomyProvider = (IEconomyProvider) this}],
+                            new {Amount = amount, Balance = balance, EconomyProvider = (IEconomyProvider) this}],
                         balance);
 
                 data.Accounts[uniqueId] = newBalance;
