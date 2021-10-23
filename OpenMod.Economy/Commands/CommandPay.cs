@@ -196,7 +196,7 @@ namespace OpenMod.Economy.Commands
                 {
                     Context.Actor,
                     Amount = Math.Abs(m_Amount),
-                    Balance = m_ActorBalance ?? m_TargetBalance,
+                    Balance = m_TargetBalance,
                     EconomyProvider = m_EconomyProvider,
                     Target = m_TargetUser
                 }]);
