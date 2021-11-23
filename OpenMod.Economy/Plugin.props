@@ -15,6 +15,6 @@
     <Authors>OpenMod;Rube200</Authors>
     <Company>OpenMod</Company>
     <Description>Economy plugin for OpenMod</Description>
-    <LangVersion>9.0</LangVersion>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 </Project>

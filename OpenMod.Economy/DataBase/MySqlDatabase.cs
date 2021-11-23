@@ -36,7 +36,7 @@ namespace OpenMod.Economy.DataBase
                 command.CommandText = $"CREATE TABLE `{TableName}` (" +
                                       "`Id` VARCHAR(128), " +
                                       "`Type` VARCHAR(20), " +
-                                      "`Balance` DECIMAL NOT NULL, " +
+                                      "`Balance` DECIMAL(10,2) NOT NULL, " +
                                       "PRIMARY KEY(`Id`, `Type`)) " +
                                       "COLLATE='utf8mb4_general_ci';";
                 await command.ExecuteNonQueryAsync();

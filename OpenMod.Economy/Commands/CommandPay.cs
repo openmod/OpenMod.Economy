@@ -74,7 +74,8 @@ namespace OpenMod.Economy.Commands
         {
             try
             {
-                m_Amount = await Context.Parameters.GetAsync<decimal>(1);
+                var inputAmount = await Context.Parameters.GetAsync<decimal>(1);
+                m_Amount = Math.Round(inputAmount, 2);
             }
             catch (CommandParameterParseException)
             {

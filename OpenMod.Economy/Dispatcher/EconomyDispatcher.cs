@@ -105,8 +105,7 @@ namespace OpenMod.Economy.Dispatcher
                 catch (NotEnoughBalanceException ex)
                 {
                     tcs.SetException(ex);
-                    if (exceptionHandler != null)
-                        exceptionHandler(ex);
+                    exceptionHandler?.Invoke(ex);
                 }
                 catch (Exception ex)
                 {
