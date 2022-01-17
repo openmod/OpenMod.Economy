@@ -1,22 +1,22 @@
 economy:
   default:
-    payment_reason: "Reason: ''Not specified' by {Actor.DisplayName}"
+    payment_reason: "Reason: 'Not specified' by {Actor.DisplayName}"
   fail:
     invalid_amount: "Invalid amount: {Amount}"
     invalid_default_balance: "Invalid default balance: {Balance}"
     invalid_store_type: "Invalid store type: {StoreType} available types: {StoreTypes}"
-    not_enough_balance: "You don't have enough balance to pay {Amount}. Current balance: {Balance}{EconomyProvider.CurrencySymbol}" #There is no Actor/Target on this call
-    not_enough_balance_negative: "{Target.DisplayName} don't have enough balance. Current balance: {Balance}{EconomyProvider.CurrencySymbol}" #There is no Actor on this call
+    not_enough_balance: "You don't have enough balance to pay {Amount:0.##}. Current balance: {Balance:0.##}{EconomyProvider.CurrencySymbol}" #There is no Actor/Target on this call
+    not_enough_balance_negative: "{Target.DisplayName} don't have enough balance. Current balance: {Balance:0.##}{EconomyProvider.CurrencySymbol}" #There is no Actor on this call
     self_pay: "You can not pay to yourself."
     user_not_found: "'{Input}' user not found."
   success:
-    show_balance: "Your balance: {Balance}{EconomyProvider.CurrencySymbol}."
-    show_balance_other: "{Target.DisplayName}'s balance: {Balance}{EconomyProvider.CurrencySymbol}."
-    pay_player: "You payed {Amount} {EconomyProvider.CurrencyName} to {Target.DisplayName}, your new balance {Balance}{EconomyProvider.CurrencySymbol}."
-    pay_bank: "You changed the {Target.DisplayName} balance by {Amount} {EconomyProvider.CurrencyName}, the new balance is {Balance}{EconomyProvider.CurrencySymbol}."
-    pay_self: "You changed your balance by {Amount} {EconomyProvider.CurrencyName}, your new balance is {Balance}{EconomyProvider.CurrencySymbol}." #There is no Target on this call
-    payed: "You receive a {Amount} {EconomyProvider.CurrencyName} payment from {Actor.DisplayName}, your new balance {Balance}{EconomyProvider.CurrencySymbol}."
-    payed_negative: "Your balance was withdrawn {Amount} {EconomyProvider.CurrencyName} by {Actor.DisplayName}, your new balance {Balance}{EconomyProvider.CurrencySymbol}."
+    show_balance: "Your balance: {Balance:0.##}{EconomyProvider.CurrencySymbol}."
+    show_balance_other: "{Target.DisplayName}'s balance: {Balance:0.##}{EconomyProvider.CurrencySymbol}."
+    pay_player: "You payed {Amount:0.##} {EconomyProvider.CurrencyName} to {Target.DisplayName}, your new balance {Balance:0.##}{EconomyProvider.CurrencySymbol}."
+    pay_bank: "You changed the {Target.DisplayName} balance by {Amount:0.##} {EconomyProvider.CurrencyName}, the new balance is {Balance:0.##}{EconomyProvider.CurrencySymbol}."
+    pay_self: "You changed your balance by {Amount:0.##} {EconomyProvider.CurrencyName}, your new balance is {Balance:0.##}{EconomyProvider.CurrencySymbol}." #There is no Target on this call
+    payed: "You receive a {Amount:0.##} {EconomyProvider.CurrencyName} payment from {Actor.DisplayName}, your new balance {Balance:0.##}{EconomyProvider.CurrencySymbol}."
+    payed_negative: "Your balance was withdrawn {Amount:0.##} {EconomyProvider.CurrencyName} by {Actor.DisplayName}, your new balance {Balance:0.##}{EconomyProvider.CurrencySymbol}."
 
 #   EconomyProvider
 #       |   ->  CurrencyName
@@ -30,3 +30,7 @@ economy:
 
 #   Amount
 #   Balance
+
+#   Amount:0.## shows up to two decimal places, but removes trailing zeroes (i.e. 1, 1.2, 1.23)
+#   Amount:0.00 shows two decimal places, adding/keeping trailing zeroes (i.e. 1.00, 1.20, 1.23)
+#   You can do the same with Balance
