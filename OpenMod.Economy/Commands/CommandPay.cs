@@ -159,7 +159,7 @@ namespace OpenMod.Economy.Commands
 
                 throw new NotEnoughBalanceException(
                     m_StringLocalizer["economy:fail:not_enough_balance_negative",
-                        new {Amount = amount, EconomyProvider = m_EconomyProvider, Target = actor}], ex.Balance!.Value);
+                        new {Amount = -amount, EconomyProvider = m_EconomyProvider, Target = actor}], ex.Balance!.Value);
             }
         }
 

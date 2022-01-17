@@ -42,7 +42,7 @@ namespace OpenMod.Economy.DataBase
                 if (newBalance < 0)
                     throw new NotEnoughBalanceException(
                         m_StringLocalizer["economy:fail:not_enough_balance",
-                            new {Amount = amount, Balance = balance, EconomyProvider = (IEconomyProvider) this}],
+                            new {Amount = -amount, Balance = balance, EconomyProvider = (IEconomyProvider) this}],
                         balance);
 
                 await m_UserDataStore.SetUserDataAsync(ownerId, ownerType, TableName, balance);
