@@ -107,7 +107,7 @@ namespace OpenMod.Economy.Commands
                     Context.Actor,
                     Amount = m_Amount,
                     EconomyProvider = m_EconomyProvider,
-                    Target = m_Reason
+                    Target = m_TargetUser
                 }];
         }
 
