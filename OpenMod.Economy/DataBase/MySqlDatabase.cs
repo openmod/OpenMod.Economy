@@ -122,7 +122,7 @@ namespace OpenMod.Economy.DataBase
         private async Task<T> ExecuteMySqlAsync<T>(Func<MySqlCommand, Task<T>> task)
         {
             await using var connection = new MySqlConnection(ConnectionString);
-            await using var command = connection.CreateCommand();
+            using var command = connection.CreateCommand();
             await connection.OpenAsync();
             return await task(command);
         }
@@ -130,7 +130,7 @@ namespace OpenMod.Economy.DataBase
         private async Task ExecuteMySqlAsync(Func<MySqlCommand, Task> task)
         {
             await using var connection = new MySqlConnection(ConnectionString);
-            await using var command = connection.CreateCommand();
+            using var command = connection.CreateCommand();
             await connection.OpenAsync();
             await task(command);
         }
