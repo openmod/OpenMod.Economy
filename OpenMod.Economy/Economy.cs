@@ -38,8 +38,8 @@ namespace OpenMod.Economy
             await databaseController.InjectAndLoad(LifetimeScope);
             Logger.LogInformation($"Database type set to: '{databaseController.DbStoreType}'");
 
-            await m_EconomyProvider.GetBalanceAsync(m_ConsoleActorAccessor.Actor.Type,
-                m_ConsoleActorAccessor.Actor.Id); //force call to detect missing libs
+            await m_EconomyProvider.GetBalanceAsync(m_ConsoleActorAccessor.Actor.Id,
+                m_ConsoleActorAccessor.Actor.Type); //force call to detect missing libs
         }
     }
 }
