@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.1;net461</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <PackageAuthors>OpenMod;Rube200</PackageAuthors>
     <PackageId>$(AssemblyName)</PackageId>
     <PackageLicenseExpression>EUPL-1.2</PackageLicenseExpression>
