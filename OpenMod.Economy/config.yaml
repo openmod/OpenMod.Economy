@@ -1,5 +1,5 @@
 ﻿Database:
-  Connection_String: "{WorkingDirectory}/file.db" #This is for LiteDb, for Mysql use 'SERVER=127.0.0.1;PORT=3306;DATABASE=OpenMod;UID=root;PASSWORD=password123;CONNECTION TIMEOUT=30'
+  Connection_String: "{WorkingDirectory}/file.db" #This is for LiteDb, for Mysql use 'SERVER=127.0.0.1;PORT=3306;DATABASE=OpenMod;UID=root;PASSWORD=password123;CONNECTION TIMEOUT=30;SSLMODE=NONE'
   Store_Type: DataStore #Types: DataStore, LiteDb, MySql, UserData
   Table_Name: Economy
 Economy:

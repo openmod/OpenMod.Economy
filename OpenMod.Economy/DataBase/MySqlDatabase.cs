@@ -27,10 +27,10 @@ namespace OpenMod.Economy.DataBase
 
         public Task CheckShemasAsync()
         {
-            return ExecuteMySqlAsync(async command =>
+            return ExecuteMySqlAsync(command =>
             {
                 command.CommandText = $"SHOW TABLES LIKE '{TableName}';";
-                if (await command.ExecuteScalarAsync() != null)
+                if (command.ExecuteScalar() != null)
                     return;
 
                 command.CommandText = $"CREATE TABLE `{TableName}` (" +
@@ -39,50 +39,50 @@ namespace OpenMod.Economy.DataBase
                                       "`Balance` DECIMAL(10,2) NOT NULL, " +
                                       "PRIMARY KEY(`Id`, `Type`)) " +
                                       "COLLATE='utf8mb4_general_ci';";
-                await command.ExecuteNonQueryAsync();
+                command.ExecuteNonQuery();
             });
         }
 
-        private async Task<bool> CreateAccountIntenalAsync(DbCommand command)
+        private bool CreateAccountIntenal(DbCommand command)
         {
             command.CommandText = $"INSERT IGNORE INTO `{TableName}` " +
                                   "(`Id`, `Type`, `Balance`) VALUES " +
                                   "(@ownerid, @ownertype, @balance);";
-            return await command.ExecuteNonQueryAsync() > 0;
+            return command.ExecuteNonQuery() > 0;
         }
 
         public override Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
         {
-            return ExecuteMySqlAsync(async command =>
+            return ExecuteMySqlAsync(command =>
             {
                 command.Parameters.Add("@ownerid", MySqlDbType.VarChar).Value = ownerId;
                 command.Parameters.Add("@ownertype", MySqlDbType.VarChar).Value = ownerType;
                 command.Parameters.Add("@balance", MySqlDbType.Decimal).Value = DefaultBalance;
-                if (await CreateAccountIntenalAsync(command))
+                if (CreateAccountIntenal(command))
                     return DefaultBalance;
 
 
                 command.CommandText = "SELECT `Balance` " +
                                       $"FROM `{TableName}` " +
                                       "WHERE `Id`=@ownerid AND `Type`=@ownertype;";
-                return await command.ExecuteScalarAsync() as decimal? ?? DefaultBalance;
+                return command.ExecuteScalar() as decimal? ?? DefaultBalance;
             });
         }
 
         public override Task SetBalanceAsync(string ownerId, string ownerType, decimal balance)
         {
-            return ExecuteMySqlAsync(async command =>
+            return ExecuteMySqlAsync(command =>
             {
                 command.Parameters.Add("@ownerid", MySqlDbType.VarChar).Value = ownerId;
                 command.Parameters.Add("@ownertype", MySqlDbType.VarChar).Value = ownerType;
                 command.Parameters.Add("@balance", MySqlDbType.Decimal).Value = balance;
-                if (await CreateAccountIntenalAsync(command))
+                if (CreateAccountIntenal(command))
                     return;
 
                 command.CommandText = $"UPDATE `{TableName}` " +
                                       "SET `Balance`=@balance " +
                                       "WHERE `Id`=@ownerid AND `Type`=@ownertype;";
-                await command.ExecuteNonQueryAsync();
+                command.ExecuteNonQuery();
             });
         }
 
@@ -98,7 +98,7 @@ namespace OpenMod.Economy.DataBase
                 var newDefault = DefaultBalance + amount;
                 command.Parameters.Add("@balance", MySqlDbType.Decimal).Value = newDefault;
 
-                if (await CreateAccountIntenalAsync(command))
+                if (CreateAccountIntenal(command))
                     return newDefault;
 
                 command.CommandText = $"UPDATE `{TableName}` " +
@@ -107,32 +107,40 @@ namespace OpenMod.Economy.DataBase
                                       "AND `Type`=@ownertype" +
                                       $"{(amount < 0 ? " AND `Balance`+@amount>='0'" : string.Empty)};";
 
-                var success = await command.ExecuteNonQueryAsync() > 0;
+                var success = command.ExecuteNonQuery() > 0;
                 var balance = await GetBalanceAsync(ownerId, ownerType);
                 if (success)
                     return balance;
 
                 throw new NotEnoughBalanceException(
                     m_StringLocalizer["economy:fail:not_enough_balance",
-                        new {Amount = -amount, Balance = balance, EconomyProvider = (IEconomyProvider) this}],
+                        new { Amount = -amount, Balance = balance, EconomyProvider = (IEconomyProvider)this }],
                     balance);
             });
+        }
+
+        private async Task<T> ExecuteMySqlAsync<T>(Func<MySqlCommand, T> task)
+        {
+            await using var connection = new MySqlConnection(ConnectionString);
+            await using var command = connection.CreateCommand();
+            connection.Open();
+            return task(command);
         }
 
         private async Task<T> ExecuteMySqlAsync<T>(Func<MySqlCommand, Task<T>> task)
         {
             await using var connection = new MySqlConnection(ConnectionString);
             await using var command = connection.CreateCommand();
-            await connection.OpenAsync();
+            connection.Open();
             return await task(command);
         }
 
-        private async Task ExecuteMySqlAsync(Func<MySqlCommand, Task> task)
+        private async Task ExecuteMySqlAsync(Action<MySqlCommand> task)
         {
             await using var connection = new MySqlConnection(ConnectionString);
             await using var command = connection.CreateCommand();
-            await connection.OpenAsync();
-            await task(command);
+            connection.Open();
+            task(command);
         }
     }
 }
