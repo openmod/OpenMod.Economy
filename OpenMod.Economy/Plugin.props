@@ -1,20 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFrameworks>netstandard2.1</TargetFrameworks>
-    <PackageAuthors>OpenMod;Rube200</PackageAuthors>
-    <PackageId>$(AssemblyName)</PackageId>
-    <PackageLicenseExpression>EUPL-1.2</PackageLicenseExpression>
-    <PackageOwners>OpenMod;Rube200</PackageOwners>
-    <PackageProjectUrl>https://github.com/openmod/OpenMod.Economy</PackageProjectUrl>
-    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <PackageTags>OpenMod Plugin OpenMod.Economy OpenMod-Plugin Economy Universal</PackageTags>
+    <PropertyGroup>
+        <Authors>OpenMod;Rube200</Authors>
+        <Company>OpenMod</Company>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+        <Description>Economy plugin for OpenMod</Description>
+        <LangVersion>Latest</LangVersion>
+        <Nullable>enable</Nullable>
+        <TargetFrameworks>net48;netstandard2.0;netstandard2.1</TargetFrameworks>
+        <WarningsAsErrors>nullable</WarningsAsErrors>
 
-    <GenerateNugetPackage>true</GenerateNugetPackage>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <PackageAuthors>$(Authors)</PackageAuthors>
+        <PackageId>$(AssemblyName)</PackageId>
+        <PackageLicenseExpression>EUPL-1.2</PackageLicenseExpression>
+        <PackageOwners>OpenMod;Rube200</PackageOwners>
+        <PackageProjectUrl>https://github.com/openmod/OpenMod.Economy</PackageProjectUrl>
+        <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+        <PackageTags>OpenMod Plugin OpenMod.Economy OpenMod-Plugin Economy Universal</PackageTags>
 
-    <Authors>OpenMod;Rube200</Authors>
-    <Company>OpenMod</Company>
-    <Description>Economy plugin for OpenMod</Description>
-    <LangVersion>latest</LangVersion>
-  </PropertyGroup>
+        <GenerateNugetPackage>true</GenerateNugetPackage>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    </PropertyGroup>
 </Project>

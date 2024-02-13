@@ -1,18 +1,20 @@
 ﻿<Project>
-  <PropertyGroup>
-    <Version>0.0.0</Version>
-  </PropertyGroup>
+    <PropertyGroup>
+        <Version>0.0.0</Version>
+    </PropertyGroup>
 
-  <Import Project="Plugin.props" />
+    <Import Project="Plugin.props"/>
 
-  <ItemGroup>
-    <EmbeddedResource Include="config.yaml" />
-    <EmbeddedResource Include="translations.yaml" />
-  </ItemGroup>
+    <ItemGroup>
+        <EmbeddedResource Include="config.yaml"/>
+        <EmbeddedResource Include="translations.yaml"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="LiteDB" Version="5.0.17" />
-    <PackageReference Include="MySqlConnector" Version="2.2.7" />
-    <PackageReference Include="OpenMod.Extensions.Economy.Abstractions" Version="3.6.2" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Lib.Harmony" NoWarn="NU1701" Version="2.2.2" IncludeAssets="compile"/>
+        <PackageReference Include="LiteDB" Version="5.0.17"/>
+        <PackageReference Include="MySqlConnector" Version="2.3.5"/>
+        <PackageReference Include="OpenMod.Extensions.Economy.Abstractions" Version="3.7.4" IncludeAssets="compile"/>
+        <PackageReference Include="OpenMod.NuGet" NoWarn="NU1701" Version="3.7.4" IncludeAssets="compile"/>
+    </ItemGroup>
 </Project>
