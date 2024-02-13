@@ -1,100 +1,120 @@
-﻿#region
-
-using System;
+﻿using System;
 using System.Collections.Concurrent;
+using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Nito.AsyncEx;
 using OpenMod.API.Ioc;
+using OpenMod.Core.Helpers;
 using OpenMod.Economy.API;
-using OpenMod.Extensions.Economy.Abstractions;
 
-#endregion
+namespace OpenMod.Economy.Dispatcher;
 
-namespace OpenMod.Economy.Dispatcher
+[ServiceImplementation(Lifetime = ServiceLifetime.Singleton)]
+[UsedImplicitly]
+public sealed class EconomyDispatcher(ILogger<EconomyDispatcher> logger)
+    : IAsyncDisposable, IDisposable, IEconomyDispatcher
 {
-    [ServiceImplementation(Lifetime = ServiceLifetime.Singleton)]
-    [UsedImplicitly]
-    public sealed class EconomyDispatcher : IEconomyDispatcher
+    private readonly SemaphoreSlim m_Mutex = new(1);
+    private readonly ConcurrentQueue<Func<Task>> m_QueueActions = new();
+
+    private ManualResetEventSlim? m_DisposeWaitEvent = new();
+    private DispatcherState m_State = DispatcherState.None;
+
+    public async ValueTask DisposeAsync()
     {
-        private readonly ILogger<EconomyDispatcher> m_Logger;
-        private readonly ConcurrentQueue<Func<Task>> m_QueueActions = new();
-
-        private bool m_IsProcessing;
-
-        public EconomyDispatcher(ILogger<EconomyDispatcher> logger)
+        using (await m_Mutex.LockAsync())
         {
-            m_Logger = logger;
+            if (m_State.HasFlag(DispatcherState.Disposed))
+                return;
+
+            m_State |= DispatcherState.Disposed;
+            if (m_QueueActions.IsEmpty)
+                return;
+
+            m_DisposeWaitEvent = new ManualResetEventSlim();
+            m_DisposeWaitEvent.Wait();
+            m_DisposeWaitEvent.Dispose();
         }
+    }
 
-        private void ProcessQueue()
+    public void Dispose()
+    {
+        AsyncContext.Run(DisposeAsync);
+    }
+
+    public Task EnqueueV2(Action action, Action<Exception>? exceptionHandler = null)
+    {
+        return EnqueueV2(() =>
         {
-            lock (this)
-            {
-                if (m_IsProcessing || m_QueueActions.IsEmpty)
-                    return;
+            action();
+            return Task.FromResult(true);
+        }, exceptionHandler);
+    }
 
-                m_IsProcessing = true;
+    public Task EnqueueV2(Func<Task> task, Action<Exception>? exceptionHandler = null)
+    {
+        return EnqueueV2(async () =>
+        {
+            await task();
+            return Task.FromResult(true);
+        }, exceptionHandler);
+    }
+
+    public Task<T> EnqueueV2<T>(Func<T> action, Action<Exception>? exceptionHandler = null)
+    {
+        return EnqueueV2(() => Task.FromResult(action()), exceptionHandler);
+    }
+
+    public Task<T> EnqueueV2<T>(Func<Task<T>> task, Action<Exception>? exceptionHandler = null)
+    {
+        if (task is null)
+            throw new ArgumentNullException(nameof(task));
+
+        var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+        AsyncContext.Run(() => EnqueueInternal(task, tcs, exceptionHandler));
+        return tcs.Task;
+    }
+
+    private async Task ProcessQueue()
+    {
+        do
+        {
+            while (m_QueueActions.TryDequeue(out var action))
+                try
+                {
+                    await action();
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Exception while dispatching a task");
+                }
+
+            using (await m_Mutex.LockAsync())
+            {
+                if (!m_QueueActions.IsEmpty)
+                    continue;
+
+                m_State &= ~DispatcherState.Processing;
+                m_DisposeWaitEvent?.Set();
+                return;
+            }
+        } while (true);
+    }
+
+    private async Task EnqueueInternal<T>(Func<Task<T>> task, TaskCompletionSource<T> tcs,
+        Action<Exception>? exceptionHandler = null)
+    {
+        using (await m_Mutex.LockAsync())
+        {
+            if (m_State.HasFlag(DispatcherState.Disposed))
+            {
+                tcs.SetCanceled();
+                return;
             }
 
-            Task.Run(async () =>
-            {
-                do
-                {
-                    while (m_QueueActions.TryDequeue(out var action))
-                        try
-                        {
-                            await action();
-                        }
-                        catch (Exception ex)
-                        {
-                            m_Logger.LogError(ex, "Exception while dispatching a task");
-                        }
-
-                    lock (this)
-                    {
-                        if (!m_QueueActions.IsEmpty)
-                            continue;
-
-                        m_IsProcessing = false;
-                        return;
-                    }
-                } while (true);
-            });
-        }
-
-        #region Enqueue
-
-        public Task EnqueueV2(Action action, Action<Exception> exceptionHandler = null)
-        {
-            return EnqueueV2(() =>
-            {
-                action();
-                return Task.FromResult(true);
-            }, exceptionHandler);
-        }
-
-        public Task EnqueueV2(Func<Task> task, Action<Exception> exceptionHandler = null)
-        {
-            return EnqueueV2(async () =>
-            {
-                await task();
-                return Task.FromResult(true);
-            }, exceptionHandler);
-        }
-
-        public Task<T> EnqueueV2<T>(Func<T> action, Action<Exception> exceptionHandler = null)
-        {
-            return EnqueueV2(() => Task.FromResult(action()), exceptionHandler);
-        }
-
-        public Task<T> EnqueueV2<T>(Func<Task<T>> task, Action<Exception> exceptionHandler = null)
-        {
-            if (task == null)
-                throw new ArgumentNullException(nameof(task));
-
-            var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
             m_QueueActions.Enqueue(async () =>
             {
                 try
@@ -102,24 +122,32 @@ namespace OpenMod.Economy.Dispatcher
                     var result = await task();
                     tcs.SetResult(result);
                 }
-                catch (NotEnoughBalanceException ex)
-                {
-                    tcs.SetException(ex);
-                    exceptionHandler?.Invoke(ex);
-                }
                 catch (Exception ex)
                 {
                     tcs.SetException(ex);
-                    if (exceptionHandler == null)
-                        throw;
+                    if (exceptionHandler is null)
+                    {
+                        logger.LogError(ex, "Fail to dispatch task");
+                        return;
+                    }
 
                     exceptionHandler(ex);
                 }
             });
-            ProcessQueue();
-            return tcs.Task;
-        }
 
-        #endregion
+            if (m_State.HasFlag(DispatcherState.Processing))
+                return;
+
+            m_State |= DispatcherState.Processing;
+            AsyncHelper.Schedule("Economy process queue", ProcessQueue, exceptionHandler);
+        }
+    }
+
+    [Flags]
+    private enum DispatcherState : byte
+    {
+        None = 0,
+        Processing = 1,
+        Disposed = 2
     }
 }
