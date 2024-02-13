@@ -1,84 +1,77 @@
-﻿#region
-
-using System;
+﻿using System;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.DependencyInjection;
 using OpenMod.API.Persistence;
-using OpenMod.Economy.API;
-using OpenMod.Economy.Classes;
-using OpenMod.Extensions.Economy.Abstractions;
+using OpenMod.Economy.Models;
+#if NETSTANDARD2_1_OR_GREATER
+using System.Collections.Generic;
+#endif
 
-#endregion
+namespace OpenMod.Economy.DataBase;
 
-namespace OpenMod.Economy.DataBase
+internal sealed class DataStoreDatabase(IServiceProvider serviceProvider) : Database(serviceProvider)
 {
-    internal sealed class DataStoreDatabase : EconomyDatabaseCore
+    private readonly IDataStore m_DataStore = serviceProvider.GetRequiredService<IDataStore>();
+
+    public override Task<bool> CheckSchemasAsync()
     {
-        private readonly IDataStore m_DataStore;
-        private readonly IEconomyDispatcher m_Dispatcher;
-        private readonly IStringLocalizer m_StringLocalizer;
-
-        public DataStoreDatabase(IConfiguration configuration, IDataStore dataStore, IEconomyDispatcher dispatcher,
-            IStringLocalizer stringLocalizer) : base(configuration)
+        return Enqueue(async () =>
         {
-            m_DataStore = dataStore;
-            m_Dispatcher = dispatcher;
-            m_StringLocalizer = stringLocalizer;
-        }
+            if (await m_DataStore.ExistsAsync(TableName))
+                return true;
 
-        public override Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
+            var data = new AccountsCollection();
+            await m_DataStore.SaveAsync(TableName, data);
+            return false;
+        });
+    }
+
+    public override Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
+    {
+        var uniqueId = $"{ownerType}_{ownerId}";
+#if NETSTANDARD2_1_OR_GREATER
+        return RunQueryAsync(data => data.Accounts.GetValueOrDefault(uniqueId, DefaultBalance), true);
+#else
+        return RunQueryAsync(data => data.Accounts.TryGetValue(uniqueId, out var balance) ? balance : DefaultBalance, true);
+#endif
+    }
+
+    public override Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount, string? _)
+    {
+        var uniqueId = $"{ownerType}_{ownerId}";
+        return RunQueryAsync(data =>
         {
-            var uniqueId = $"{ownerType}_{ownerId}";
-            return m_Dispatcher.EnqueueV2(async () =>
-            {
-                var data = (AccountsCollection) null;
-                if (await m_DataStore.ExistsAsync(TableName))
-                    data = await m_DataStore.LoadAsync<AccountsCollection>(TableName);
+#if NETSTANDARD2_1_OR_GREATER
+            var balance = data.Accounts.GetValueOrDefault(uniqueId, DefaultBalance);
+#else
+            if (!data.Accounts.TryGetValue(uniqueId, out var balance)) balance = DefaultBalance;
+#endif
 
-                data ??= Activator.CreateInstance<AccountsCollection>();
-                return data.Accounts.TryGetValue(uniqueId, out var balance) ? balance : DefaultBalance;
-            });
-        }
+            var newBalance = balance + amount;
+            if (newBalance < 0)
+                throw ThrowNotEnoughtBalance(amount, balance);
 
-        public override Task<decimal> UpdateBalanceAsync(string ownerId, string ownerType, decimal amount, string _)
+            data.Accounts[uniqueId] = newBalance;
+            return newBalance;
+        }, false);
+    }
+
+    public override Task SetBalanceAsync(string ownerId, string ownerType, decimal balance)
+    {
+        var uniqueId = $"{ownerType}_{ownerId}";
+        return RunQueryAsync(data => data.Accounts[uniqueId] = balance, false);
+    }
+
+    private Task<TReturn> RunQueryAsync<TReturn>(Func<AccountsCollection, TReturn> action, bool readOnly)
+    {
+        return Enqueue(async () =>
         {
-            var uniqueId = $"{ownerType}_{ownerId}";
-            return m_Dispatcher.EnqueueV2(async () =>
-            {
-                var data = (AccountsCollection) null;
-                if (await m_DataStore.ExistsAsync(TableName))
-                    data = await m_DataStore.LoadAsync<AccountsCollection>(TableName);
+            var data = await m_DataStore.LoadAsync<AccountsCollection>(TableName) ?? new AccountsCollection();
+            var result = action(data);
 
-                data ??= Activator.CreateInstance<AccountsCollection>();
-                if (!data.Accounts.TryGetValue(uniqueId, out var balance)) balance = DefaultBalance;
-
-                var newBalance = balance + amount;
-                if (newBalance < 0)
-                    throw new NotEnoughBalanceException(
-                        m_StringLocalizer["economy:fail:not_enough_balance",
-                            new {Amount = -amount, Balance = balance, EconomyProvider = (IEconomyProvider) this}],
-                        balance);
-
-                data.Accounts[uniqueId] = newBalance;
+            if (!readOnly)
                 await m_DataStore.SaveAsync(TableName, data);
-                return newBalance;
-            });
-        }
-
-        public override Task SetBalanceAsync(string ownerId, string ownerType, decimal balance)
-        {
-            var uniqueId = $"{ownerType}_{ownerId}";
-            return m_Dispatcher.EnqueueV2(async () =>
-            {
-                var data = (AccountsCollection) null;
-                if (await m_DataStore.ExistsAsync(TableName))
-                    data = await m_DataStore.LoadAsync<AccountsCollection>(TableName);
-
-                data ??= Activator.CreateInstance<AccountsCollection>();
-                data.Accounts[uniqueId] = balance;
-                await m_DataStore.SaveAsync(TableName, data);
-            });
-        }
+            return result;
+        });
     }
 }
