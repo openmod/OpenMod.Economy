@@ -1,45 +1,35 @@
-﻿#region
-
-using System;
+﻿using System;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OpenMod.API.Plugins;
-using OpenMod.Core.Console;
 using OpenMod.Core.Plugins;
-using OpenMod.Economy.Controllers;
-using OpenMod.Extensions.Economy.Abstractions;
-
-#endregion
+using OpenMod.Economy.API;
+using OpenMod.Economy.Models;
 
 [assembly:
     PluginMetadata("OpenMod.Economy", Author = "OpenMod,Rube200", DisplayName = "OpenMod.Economy",
         Website = "https://github.com/openmod/OpenMod.Economy")]
 
-namespace OpenMod.Economy
+namespace OpenMod.Economy;
+
+[UsedImplicitly]
+public sealed class Economy(
+    DatabaseSettings databaseSettings,
+    IServiceProvider serviceProvider)
+#pragma warning disable CS9107 // Parameter is captured into the state of the enclosing type and its value is also passed to the base constructor. The value might be captured by the base class as well.
+    : OpenModUniversalPlugin(serviceProvider)
+#pragma warning restore CS9107 // Parameter is captured into the state of the enclosing type and its value is also passed to the base constructor. The value might be captured by the base class as well.
 {
-    public sealed class Economy : OpenModUniversalPlugin
+    protected override async Task OnLoadAsync()
     {
-        private readonly IConsoleActorAccessor m_ConsoleActorAccessor;
-        private readonly IEconomyProvider m_EconomyProvider;
+        databaseSettings.ConnectionString =
+            databaseSettings.ConnectionString.Replace("{WorkingDirectory}", WorkingDirectory);
 
-        public Economy(IConsoleActorAccessor consoleActorAccessor,
-            IEconomyProvider economyProvider,
-            IServiceProvider serviceProvider) : base(serviceProvider)
-        {
-            m_ConsoleActorAccessor = consoleActorAccessor;
-            m_EconomyProvider = economyProvider;
-        }
+        var database = serviceProvider.GetRequiredService<IDatabase>();
+        await database.CheckSchemasAsync();
 
-        protected override async Task OnLoadAsync()
-        {
-            if (m_EconomyProvider is not DatabaseController databaseController)
-                return;
-
-            await databaseController.InjectAndLoad(LifetimeScope);
-            Logger.LogInformation($"Database type set to: '{databaseController.DbStoreType}'");
-
-            await m_EconomyProvider.GetBalanceAsync(m_ConsoleActorAccessor.Actor.Id,
-                m_ConsoleActorAccessor.Actor.Type); //force call to detect missing libs
-        }
+        Logger.LogInformation($"Database type set to: '{databaseSettings.DbType}'");
     }
 }

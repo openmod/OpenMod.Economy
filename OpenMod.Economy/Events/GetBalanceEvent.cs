@@ -1,22 +1,13 @@
-﻿#region
+﻿using OpenMod.Core.Eventing;
 
-using OpenMod.Core.Eventing;
+namespace OpenMod.Economy.Events;
 
-#endregion
-
-namespace OpenMod.Economy.Events
+public class GetBalanceEvent(string ownerId, string ownerType, decimal balance) : Event
 {
-    public class GetBalanceEvent : Event
-    {
-        public GetBalanceEvent(string ownerId, string ownerType, decimal balance)
-        {
-            OwnerId = ownerId;
-            OwnerType = ownerType;
-            Balance = balance;
-        }
+    // ReSharper disable UnusedMember.Global
+    public string OwnerId { get; } = ownerId;
+    public string OwnerType { get; } = ownerType;
 
-        public string OwnerId { get; }
-        public string OwnerType { get; }
-        public decimal Balance { get; }
-    }
+    public decimal Balance { get; } = balance;
+    // ReSharper restore UnusedMember.Global
 }
