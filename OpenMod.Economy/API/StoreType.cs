@@ -1,10 +1,9 @@
-﻿namespace OpenMod.Economy.API
+﻿namespace OpenMod.Economy.API;
+
+public enum StoreType
 {
-    public enum StoreType
-    {
-        DataStore,
-        LiteDb,
-        MySql,
-        UserData
-    }
+    DataStore,
+    LiteDb,
+    MySql,
+    UserData
 }
