@@ -11,36 +11,33 @@ namespace OpenMod.Economy.DataBase;
 
 public abstract class Database : IDatabase, IDisposable
 {
-    protected readonly string ConnectionString;
+    private readonly DatabaseSettings m_DatabaseSettings;
+
 
     private readonly IEconomyDispatcher m_EconomyDispatcher;
+    private readonly EconomySettings m_EconomySettings;
     private readonly IStringLocalizer m_StringLocalizer;
-    protected readonly string TableName;
     private CancellationTokenSource? m_CancellationTokenSource = new();
 
     protected Database(IServiceProvider serviceProvider)
     {
-        var databaseSettings = serviceProvider.GetRequiredService<DatabaseSettings>();
-        ConnectionString = databaseSettings.ConnectionString;
-        TableName = databaseSettings.TableName;
-
-        var economySettings = serviceProvider.GetRequiredService<EconomySettings>();
-        CurrencyName = economySettings.CurrencyName;
-        CurrencySymbol = economySettings.CurrencySymbol;
-        DefaultBalance = economySettings.DefaultBalance;
-
+        m_DatabaseSettings = serviceProvider.GetRequiredService<DatabaseSettings>();
+        m_EconomySettings = serviceProvider.GetRequiredService<EconomySettings>();
         m_EconomyDispatcher = serviceProvider.GetRequiredService<IEconomyDispatcher>();
         m_StringLocalizer = serviceProvider.GetRequiredService<IStringLocalizer>();
     }
 
+    protected string ConnectionString => m_DatabaseSettings.ConnectionString;
+    protected string TableName => m_DatabaseSettings.TableName;
+
     // ReSharper disable once MemberCanBeProtected.Global
-    public decimal DefaultBalance { get; }
+    public decimal DefaultBalance => m_EconomySettings.DefaultBalance;
 
     /// <inheritdoc />
-    public string CurrencyName { get; }
+    public string CurrencyName => m_EconomySettings.CurrencyName;
 
     /// <inheritdoc />
-    public string CurrencySymbol { get; }
+    public string CurrencySymbol => m_EconomySettings.CurrencySymbol;
 
     public abstract Task<bool> CheckSchemasAsync();
 

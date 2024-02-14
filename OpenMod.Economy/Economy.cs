@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Autofac;
 using JetBrains.Annotations;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OpenMod.API.Plugins;
 using OpenMod.Core.Plugins;
@@ -15,21 +15,23 @@ using OpenMod.Economy.Models;
 namespace OpenMod.Economy;
 
 [UsedImplicitly]
-public sealed class Economy(
-    DatabaseSettings databaseSettings,
-    IServiceProvider serviceProvider)
-#pragma warning disable CS9107 // Parameter is captured into the state of the enclosing type and its value is also passed to the base constructor. The value might be captured by the base class as well.
-    : OpenModUniversalPlugin(serviceProvider)
-#pragma warning restore CS9107 // Parameter is captured into the state of the enclosing type and its value is also passed to the base constructor. The value might be captured by the base class as well.
+public sealed class Economy : OpenModUniversalPlugin
 {
+    private readonly DatabaseSettings m_DatabaseSettings;
+
+    public Economy(DatabaseSettings databaseSettings, IServiceProvider serviceProvider) : base(serviceProvider)
+    {
+        m_DatabaseSettings = databaseSettings;
+    }
+
     protected override async Task OnLoadAsync()
     {
-        databaseSettings.ConnectionString =
-            databaseSettings.ConnectionString.Replace("{WorkingDirectory}", WorkingDirectory);
+        m_DatabaseSettings.ConnectionString =
+            m_DatabaseSettings.ConnectionString.Replace("{WorkingDirectory}", WorkingDirectory);
 
-        var database = serviceProvider.GetRequiredService<IDatabase>();
+        var database = LifetimeScope.Resolve<IDatabase>();
         await database.CheckSchemasAsync();
 
-        Logger.LogInformation($"Database type set to: '{databaseSettings.DbType}'");
+        Logger.LogInformation($"Database type set to: '{m_DatabaseSettings.DbType}'");
     }
 }

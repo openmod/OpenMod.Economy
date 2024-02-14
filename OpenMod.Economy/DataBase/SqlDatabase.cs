@@ -6,9 +6,12 @@ using System.Threading.Tasks;
 
 namespace OpenMod.Economy.DataBase;
 
-public abstract class SqlDatabase<TConnection>(IServiceProvider serviceProvider)
-    : Database(serviceProvider) where TConnection : DbConnection
+public abstract class SqlDatabase<TConnection> : Database where TConnection : DbConnection
 {
+    protected SqlDatabase(IServiceProvider serviceProvider) : base(serviceProvider)
+    {
+    }
+
     public override Task<bool> CheckSchemasAsync()
     {
         var token = GetCancellationToken();

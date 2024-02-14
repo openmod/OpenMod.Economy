@@ -14,14 +14,20 @@ namespace OpenMod.Economy.Dispatcher;
 
 [ServiceImplementation(Lifetime = ServiceLifetime.Singleton)]
 [UsedImplicitly]
-public sealed class EconomyDispatcher(ILogger<EconomyDispatcher> logger)
-    : IAsyncDisposable, IDisposable, IEconomyDispatcher
+public sealed class EconomyDispatcher : IAsyncDisposable, IDisposable, IEconomyDispatcher
 {
+    private readonly ILogger<EconomyDispatcher> m_Logger;
+
     private readonly SemaphoreSlim m_Mutex = new(1);
     private readonly ConcurrentQueue<Func<Task>> m_QueueActions = new();
 
     private ManualResetEventSlim? m_DisposeWaitEvent = new();
     private DispatcherState m_State = DispatcherState.None;
+
+    public EconomyDispatcher(ILogger<EconomyDispatcher> logger)
+    {
+        m_Logger = logger;
+    }
 
     public async ValueTask DisposeAsync()
     {
@@ -89,7 +95,7 @@ public sealed class EconomyDispatcher(ILogger<EconomyDispatcher> logger)
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Exception while dispatching a task");
+                    m_Logger.LogError(ex, "Exception while dispatching a task");
                 }
 
             using (await m_Mutex.LockAsync())
@@ -127,7 +133,7 @@ public sealed class EconomyDispatcher(ILogger<EconomyDispatcher> logger)
                     tcs.SetException(ex);
                     if (exceptionHandler is null)
                     {
-                        logger.LogError(ex, "Fail to dispatch task");
+                        m_Logger.LogError(ex, "Fail to dispatch task");
                         return;
                     }
 

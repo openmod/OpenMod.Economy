@@ -16,16 +16,27 @@ namespace OpenMod.Economy.Controllers;
 
 [ServiceImplementation(Lifetime = ServiceLifetime.Singleton)]
 [UsedImplicitly]
-public sealed class EconomyProvider(IServiceProvider serviceProvider, EconomySettings economySettings)
-    : IEconomyProvider
+public sealed class EconomyProvider : IEconomyProvider
 {
-    private readonly IEventBus m_EventBus = serviceProvider.GetRequiredService<IEventBus>();
-    private readonly IOpenModComponent m_OpenModComponent = serviceProvider.GetRequiredService<IOpenModComponent>();
-    private readonly IStringLocalizer m_StringLocalizer = serviceProvider.GetRequiredService<IStringLocalizer>();
+    private readonly EconomySettings m_EconomySettings;
+    private readonly IEventBus m_EventBus;
+    private readonly IOpenModComponent m_OpenModComponent;
+    private readonly IServiceProvider m_ServiceProvider;
+    private readonly IStringLocalizer m_StringLocalizer;
 
-    private IDatabase Database => serviceProvider.GetRequiredService<IDatabase>();
-    public string CurrencyName => economySettings.CurrencyName;
-    public string CurrencySymbol => economySettings.CurrencySymbol;
+    public EconomyProvider(EconomySettings economySettings, IEventBus eventBus, IOpenModComponent openModComponent,
+        IServiceProvider serviceProvider, IStringLocalizer stringLocalizer)
+    {
+        m_EconomySettings = economySettings;
+        m_EventBus = eventBus;
+        m_OpenModComponent = openModComponent;
+        m_ServiceProvider = serviceProvider;
+        m_StringLocalizer = stringLocalizer;
+    }
+
+    private IDatabase Database => m_ServiceProvider.GetRequiredService<IDatabase>();
+    public string CurrencyName => m_EconomySettings.CurrencyName;
+    public string CurrencySymbol => m_EconomySettings.CurrencySymbol;
 
     public async Task<decimal> GetBalanceAsync(string ownerId, string ownerType)
     {

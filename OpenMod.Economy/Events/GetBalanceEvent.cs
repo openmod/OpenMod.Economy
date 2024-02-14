@@ -2,12 +2,19 @@
 
 namespace OpenMod.Economy.Events;
 
-public class GetBalanceEvent(string ownerId, string ownerType, decimal balance) : Event
+public class GetBalanceEvent : Event
 {
-    // ReSharper disable UnusedMember.Global
-    public string OwnerId { get; } = ownerId;
-    public string OwnerType { get; } = ownerType;
+    public GetBalanceEvent(string ownerId, string ownerType, decimal balance)
+    {
+        OwnerId = ownerId;
+        OwnerType = ownerType;
+        Balance = balance;
+    }
 
-    public decimal Balance { get; } = balance;
-    // ReSharper restore UnusedMember.Global
+    // ReSharper disable UnusedAutoPropertyAccessor.Global
+    public string OwnerId { get; }
+    public string OwnerType { get; }
+
+    public decimal Balance { get; }
+    // ReSharper restore UnusedAutoPropertyAccessor.Global
 }

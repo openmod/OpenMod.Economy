@@ -5,8 +5,12 @@ using OpenMod.Economy.Models;
 
 namespace OpenMod.Economy.DataBase;
 
-internal sealed class LiteDatabase(IServiceProvider serviceProvider) : Database(serviceProvider)
+internal sealed class LiteDatabase : Database
 {
+    public LiteDatabase(IServiceProvider serviceProvider) : base(serviceProvider)
+    {
+    }
+
     public override Task<bool> CheckSchemasAsync()
     {
         return RunQueryNonEnqueueAsync(connection => connection.CollectionExists(TableName), true);

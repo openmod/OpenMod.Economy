@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 using OpenMod.API.Persistence;
 using OpenMod.Economy.Models;
 #if NETSTANDARD2_1_OR_GREATER
@@ -9,9 +8,14 @@ using System.Collections.Generic;
 
 namespace OpenMod.Economy.DataBase;
 
-internal sealed class DataStoreDatabase(IServiceProvider serviceProvider) : Database(serviceProvider)
+internal sealed class DataStoreDatabase : Database
 {
-    private readonly IDataStore m_DataStore = serviceProvider.GetRequiredService<IDataStore>();
+    private readonly IDataStore m_DataStore;
+
+    public DataStoreDatabase(IDataStore dataStore, IServiceProvider serviceProvider) : base(serviceProvider)
+    {
+        m_DataStore = dataStore;
+    }
 
     public override Task<bool> CheckSchemasAsync()
     {

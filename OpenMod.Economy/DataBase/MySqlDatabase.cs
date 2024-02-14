@@ -3,4 +3,9 @@ using MySqlConnector;
 
 namespace OpenMod.Economy.DataBase;
 
-internal sealed class MySqlDatabase(IServiceProvider serviceProvider) : SqlDatabase<MySqlConnection>(serviceProvider);
+internal sealed class MySqlDatabase : SqlDatabase<MySqlConnection>
+{
+    public MySqlDatabase(IServiceProvider serviceProvider) : base(serviceProvider)
+    {
+    }
+}

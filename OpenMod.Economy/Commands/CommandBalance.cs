@@ -19,17 +19,22 @@ namespace OpenMod.Economy.Commands;
 [CommandSyntax("[player]")]
 [RegisterCommandPermission(OthersPerm, Description = "Permission to see the balance of other players")]
 [UsedImplicitly]
-public class CommandBalance(
-    IEconomyProvider economyProvider,
-    IServiceProvider serviceProvider,
-    IStringLocalizer stringLocalizer)
-    : Command(serviceProvider)
+public class CommandBalance : Command
 {
     // ReSharper disable once MemberCanBePrivate.Global
     public const string OthersPerm = "others";
+    private readonly IEconomyProvider m_EconomyProvider;
+    private readonly IStringLocalizer m_StringLocalizer;
 
     private bool m_IsSelf;
     private ICommandActor? m_TargetUser;
+
+    public CommandBalance(IEconomyProvider economyProvider, IServiceProvider serviceProvider,
+        IStringLocalizer stringLocalizer) : base(serviceProvider)
+    {
+        m_EconomyProvider = economyProvider;
+        m_StringLocalizer = stringLocalizer;
+    }
 
     protected override async Task OnExecuteAsync()
     {
@@ -43,11 +48,11 @@ public class CommandBalance(
         if (!m_IsSelf)
             msgKey.Append("_other");
 
-        await PrintAsync(stringLocalizer[msgKey.ToString(), new
+        await PrintAsync(m_StringLocalizer[msgKey.ToString(), new
         {
             Context.Actor,
-            Balance = await economyProvider.GetBalanceAsync(m_TargetUser!.Id, m_TargetUser.Type),
-            EconomyProvider = economyProvider,
+            Balance = await m_EconomyProvider.GetBalanceAsync(m_TargetUser!.Id, m_TargetUser.Type),
+            EconomyProvider = m_EconomyProvider,
             Target = m_TargetUser
         }]);
     }
@@ -73,7 +78,7 @@ public class CommandBalance(
         }
         catch (CommandParameterParseException)
         {
-            throw new UserFriendlyException(stringLocalizer["economy:fail:user_not_found",
+            throw new UserFriendlyException(m_StringLocalizer["economy:fail:user_not_found",
                 new { Input = await Context.Parameters.GetAsync<string>(0) }]);
         }
     }

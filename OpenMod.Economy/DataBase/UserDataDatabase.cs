@@ -1,13 +1,17 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 using OpenMod.API.Users;
 
 namespace OpenMod.Economy.DataBase;
 
-internal sealed class UserDataDatabase(IServiceProvider serviceProvider) : Database(serviceProvider)
+internal sealed class UserDataDatabase : Database
 {
-    private readonly IUserDataStore m_UserDataStore = serviceProvider.GetRequiredService<IUserDataStore>();
+    private readonly IUserDataStore m_UserDataStore;
+
+    public UserDataDatabase(IServiceProvider serviceProvider, IUserDataStore userDataStore) : base(serviceProvider)
+    {
+        m_UserDataStore = userDataStore;
+    }
 
     public override Task<bool> CheckSchemasAsync()
     {

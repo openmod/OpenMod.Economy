@@ -21,14 +21,11 @@ namespace OpenMod.Economy.Commands;
 [RegisterCommandPermission(Negative, Description = "Any user with this permission can withdraw money from other users")]
 [RegisterCommandPermission(PayToSelf, Description = "Permission to increase/decrease the own balance")]
 [UsedImplicitly]
-public class CommandPay(
-    EconomySettings economySettings,
-    IEconomyProvider economyProvider,
-    IServiceProvider serviceProvider,
-    IStringLocalizer stringLocalizer)
-    : Command(serviceProvider)
+public class CommandPay : Command
 {
-    private readonly bool m_SetNegative = economySettings.NegativeToZero;
+    private readonly IEconomyProvider m_EconomyProvider;
+    private readonly EconomySettings m_EconomySettings;
+    private readonly IStringLocalizer m_StringLocalizer;
 
     private decimal? m_ActorBalance;
 
@@ -40,6 +37,16 @@ public class CommandPay(
     private string? m_Reason;
     private decimal m_TargetBalance;
     private ICommandActor? m_TargetUser;
+
+    public CommandPay(EconomySettings economySettings, IEconomyProvider economyProvider,
+        IServiceProvider serviceProvider, IStringLocalizer stringLocalizer) : base(serviceProvider)
+    {
+        m_EconomySettings = economySettings;
+        m_EconomyProvider = economyProvider;
+        m_StringLocalizer = stringLocalizer;
+    }
+
+    private bool SetNegative => m_EconomySettings.NegativeToZero;
 
     protected override async Task OnExecuteAsync()
     {
@@ -71,7 +78,7 @@ public class CommandPay(
         }
         catch (CommandParameterParseException)
         {
-            throw new UserFriendlyException(stringLocalizer["economy:fail:invalid_amount",
+            throw new UserFriendlyException(m_StringLocalizer["economy:fail:invalid_amount",
                 new { Amount = await Context.Parameters.GetAsync<string>(1) }]);
         }
 
@@ -85,7 +92,7 @@ public class CommandPay(
                 return;
 
             default:
-                throw new UserFriendlyException(stringLocalizer["economy:fail:invalid_amount",
+                throw new UserFriendlyException(m_StringLocalizer["economy:fail:invalid_amount",
                     new { Amount = m_Amount }]);
         }
     }
@@ -94,11 +101,11 @@ public class CommandPay(
     {
         m_Reason = Context.Parameters.Length > 2
             ? Context.Parameters.GetArgumentLine(2)
-            : stringLocalizer["economy:default:payment_reason", new
+            : m_StringLocalizer["economy:default:payment_reason", new
             {
                 Context.Actor,
                 Amount = m_Amount,
-                EconomyProvider = economyProvider,
+                EconomyProvider = m_EconomyProvider,
                 Target = m_TargetUser
             }];
     }
@@ -111,11 +118,11 @@ public class CommandPay(
             m_IsSelf = Context.Actor.Equals(m_TargetUser);
 
             if (m_IsSelf && await IsDenied(PayToSelf))
-                throw new UserFriendlyException(stringLocalizer["economy:fail:self_pay"]);
+                throw new UserFriendlyException(m_StringLocalizer["economy:fail:self_pay"]);
         }
         catch (CommandParameterParseException)
         {
-            throw new UserFriendlyException(stringLocalizer["economy:fail:user_not_found",
+            throw new UserFriendlyException(m_StringLocalizer["economy:fail:user_not_found",
                 new { Input = await Context.Parameters.GetAsync<string>(0) }]);
         }
     }
@@ -133,16 +140,16 @@ public class CommandPay(
     {
         try
         {
-            return await economyProvider.UpdateBalanceAsync(actor.Id, actor.Type, amount, m_Reason);
+            return await m_EconomyProvider.UpdateBalanceAsync(actor.Id, actor.Type, amount, m_Reason);
         }
         catch (NotEnoughBalanceException ex)
         {
             if (!m_IsAmountNegative)
                 throw;
 
-            if (m_SetNegative)
+            if (SetNegative)
             {
-                await economyProvider.SetBalanceAsync(actor.Id, actor.Type, 0);
+                await m_EconomyProvider.SetBalanceAsync(actor.Id, actor.Type, 0);
                 return 0;
             }
 
@@ -150,8 +157,8 @@ public class CommandPay(
                 throw;
 
             throw new NotEnoughBalanceException(
-                stringLocalizer["economy:fail:not_enough_balance_negative",
-                    new { Amount = -amount, EconomyProvider = economyProvider, Target = actor }], ex.Balance!.Value);
+                m_StringLocalizer["economy:fail:not_enough_balance_negative",
+                    new { Amount = -amount, EconomyProvider = m_EconomyProvider, Target = actor }], ex.Balance!.Value);
         }
     }
 
@@ -175,22 +182,22 @@ public class CommandPay(
             m_TargetBalance = await UpdateBalance(m_TargetUser!, m_Amount);
         }
 
-        await PrintAsync(stringLocalizer[
+        await PrintAsync(m_StringLocalizer[
             m_ActorBalance.HasValue ? "economy:success:pay_player" : "economy:success:pay_bank", new
             {
                 Context.Actor,
                 Amount = m_Amount,
                 Balance = m_ActorBalance ?? m_TargetBalance,
-                EconomyProvider = economyProvider,
+                EconomyProvider = m_EconomyProvider,
                 Target = m_TargetUser
             }]);
-        await m_TargetUser!.PrintMessageAsync(stringLocalizer[
+        await m_TargetUser!.PrintMessageAsync(m_StringLocalizer[
             m_IsAmountNegative ? "economy:success:payed_negative" : "economy:success:payed", new
             {
                 Context.Actor,
                 Amount = Math.Abs(m_Amount),
                 Balance = m_TargetBalance,
-                EconomyProvider = economyProvider,
+                EconomyProvider = m_EconomyProvider,
                 Target = m_TargetUser
             }]);
     }
@@ -198,12 +205,12 @@ public class CommandPay(
     private async Task UpdateBalanceAndDisplaySelf()
     {
         m_ActorBalance = await UpdateBalance(Context.Actor, m_Amount);
-        await PrintAsync(stringLocalizer["economy:success:pay_self", new
+        await PrintAsync(m_StringLocalizer["economy:success:pay_self", new
         {
             Context.Actor,
             Amount = m_Amount,
             Balance = m_ActorBalance,
-            EconomyProvider = economyProvider
+            EconomyProvider = m_EconomyProvider
         }]);
     }
 
