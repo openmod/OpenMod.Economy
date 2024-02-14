@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
     <PropertyGroup>
         <Authors>OpenMod;Rube200</Authors>
         <Company>OpenMod</Company>
