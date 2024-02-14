@@ -41,8 +41,16 @@ public sealed class EconomyDispatcher : IAsyncDisposable, IDisposable, IEconomyD
                 return;
 
             m_DisposeWaitEvent = new ManualResetEventSlim();
-            m_DisposeWaitEvent.Wait();
-            m_DisposeWaitEvent.Dispose();
+        }
+
+        try
+        {
+            m_DisposeWaitEvent?.Wait();
+        }
+        finally
+        {
+            m_DisposeWaitEvent?.Dispose();
+            m_DisposeWaitEvent = null;
         }
     }
 
