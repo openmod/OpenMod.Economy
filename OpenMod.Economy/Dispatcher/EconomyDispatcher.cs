@@ -21,7 +21,7 @@ public sealed class EconomyDispatcher : IAsyncDisposable, IDisposable, IEconomyD
     private readonly SemaphoreSlim m_Mutex = new(1);
     private readonly ConcurrentQueue<Func<Task>> m_QueueActions = new();
 
-    private ManualResetEventSlim? m_DisposeWaitEvent = new();
+    private ManualResetEventSlim? m_DisposeWaitEvent;
     private DispatcherState m_State = DispatcherState.None;
 
     public EconomyDispatcher(ILogger<EconomyDispatcher> logger)
