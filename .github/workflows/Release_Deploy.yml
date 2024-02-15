@@ -10,39 +10,39 @@ on:
         default: "-"
         description: "Update Notes to Release"
         required: true
+        
 jobs:
   release_deploy:
     name: "OpenMod Economy Release/Deployment"
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
-      name: Checkout Repository
-      with:
-        fetch-depth: 0
+    - name: Checkout Repository
+      uses: actions/checkout@master
     - name: Setup .NET Core
       uses: actions/setup-dotnet@master
       with:
-        dotnet-version: 5.0.100
+        dotnet-version: 8.0.200
     - name: Restore dependencies
       run: dotnet restore OpenMod.Economy
     - name: Update version
       run: "sed -i \"s#<Version>0.0.0</Version>#<Version>${{ github.event.inputs.version }}</Version>#\" OpenMod.Economy/OpenMod.Economy.csproj"  
-    - name: Build
+    - name: Build Project
       run: dotnet build OpenMod.Economy --configuration Release --no-restore
     - name: Push to NuGet
       run: dotnet nuget push OpenMod.Economy/bin/Release/*.nupkg
              --api-key ${{ secrets.NUGET_DEPLOY_KEY }}
              --source https://api.nuget.org/v3/index.json
     - name: Release
-      id: create_release
-      uses: actions/create-release@master
+      uses: softprops/action-gh-release@master
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IS_PRE_RELEASE: ${{ endsWith(github.event.inputs.version, '-alpha') || endsWith(github.event.inputs.version, '-beta') || endsWith(github.event.inputs.version, '-rc') }}
       with:
         body: |
           Install: openmod install Openmod.Economy
           Nuget: https://www.nuget.org/packages/OpenMod.Economy
           Notes:
             ${{ github.event.inputs.update_notes }}
-        release_name: OpenMod.Economy v${{ github.event.inputs.version }}
+        name: OpenMod.Economy v${{ github.event.inputs.version }}
+        prerelease: ${{ env.IS_PRE_RELEASE }}
         tag_name: V${{ github.event.inputs.version }}
